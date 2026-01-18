@@ -41,6 +41,19 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
+## 📋 Uppdatera Aktier
+
+Ticker-listan finns i `tickers.py` - uppdatera den filen för att lägga till/ta bort aktier!
+
+Se [TICKER_GUIDE.md](TICKER_GUIDE.md) för detaljerad guide.
+
+## ⚡ Performance
+
+- **Parallell processing:** 10 aktier analyseras samtidigt
+- **Caching:** 45 minuters cache (undviker Yahoo Finance rate limiting)
+- **Smart filtrering:** Filtrerar bort aktier tidigt för snabbare resultat
+- **Hastighet:** Large Cap (51 aktier) ~20-30 sekunder
+
 ## 📖 Användning
 
 1. Justera filtren i sidopanelen

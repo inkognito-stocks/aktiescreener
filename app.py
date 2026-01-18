@@ -1140,6 +1140,291 @@ def process_batch_results(data, tickers_in_batch, price_range, streak_filter,
     
     return results
 
+# --- TOP VINNARE/FÖRLORARE ---
+
+@st.cache_data(ttl=300)  # Cache i 5 minuter
+def get_top_gainers_losers(limit=10):
+    """
+    Hämtar top 10 vinnare och förlorare från alla aktier i market_data.
+    """
+    try:
+        # Samla alla tickers från alla marknader
+        all_tickers = []
+        for market_data in ticker_lists.values():
+            for category_tickers in market_data.values():
+                all_tickers.extend(category_tickers)
+        
+        # Ta bort duplicater
+        all_tickers = list(set(all_tickers))
+        
+        if not all_tickers:
+            return [], []
+        
+        # Hämta data för alla aktier i batch (använd större batches för snabbare hämtning)
+        BATCH_SIZE = 50
+        batches = [all_tickers[i:i + BATCH_SIZE] for i in range(0, len(all_tickers), BATCH_SIZE)]
+        
+        gainers = []
+        losers = []
+        
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        
+        for batch_idx, batch in enumerate(batches, 1):
+            status_text.caption(f"⚡ Hämtar data för batch {batch_idx}/{len(batches)} ({len(batch)} aktier)...")
+            progress_bar.progress(batch_idx / len(batches))
+            
+            try:
+                # Hämta data för batch
+                data = yf.download(batch, period="5d", group_by='ticker', threads=True, progress=False, timeout=10)
+                
+                if data.empty:
+                    continue
+                
+                # Processa varje ticker i batchen
+                for ticker in batch:
+                    try:
+                        # Hämta data för denna ticker
+                        if len(batch) == 1:
+                            ticker_data = data
+                        else:
+                            if ticker not in data.columns.levels[0]:
+                                continue
+                            ticker_data = data[ticker]
+                        
+                        if 'Close' not in ticker_data.columns:
+                            continue
+                        
+                        closes = ticker_data['Close'].dropna()
+                        if len(closes) < 2:
+                            continue
+                        
+                        # Beräkna dagens förändring
+                        today_price = float(closes.iloc[-1])
+                        yesterday_price = float(closes.iloc[-2])
+                        
+                        # Skip om pris är 0 eller NaN
+                        if today_price == 0 or pd.isna(today_price) or yesterday_price == 0 or pd.isna(yesterday_price):
+                            continue
+                        
+                        change_pct = ((today_price - yesterday_price) / yesterday_price) * 100
+                        
+                        # Hämta marknad och valuta
+                        market = get_market_from_ticker(ticker)
+                        currency = "SEK" if market == 'Sverige 🇸🇪' else ("CAD" if market == 'Kanada 🇨🇦' else "USD")
+                        
+                        # Generera Yahoo Finance länk
+                        yahoo_url = get_yahoo_finance_url(ticker)
+                        
+                        result = {
+                            "Ticker": ticker,
+                            "Ticker_URL": yahoo_url,
+                            "Marknad": market,
+                            f"Pris ({currency})": round(today_price, 2),
+                            "Förändring (%)": round(change_pct, 2)
+                        }
+                        
+                        if change_pct > 0:
+                            gainers.append(result)
+                        elif change_pct < 0:
+                            losers.append(result)
+                    
+                    except Exception:
+                        continue
+            
+            except Exception:
+                continue
+        
+        progress_bar.empty()
+        status_text.empty()
+        
+        # Sortera och ta top 10
+        top_gainers = sorted(gainers, key=lambda x: x['Förändring (%)'], reverse=True)[:limit]
+        top_losers = sorted(losers, key=lambda x: x['Förändring (%)'])[:limit]
+        
+        return top_gainers, top_losers
+    
+    except Exception as e:
+        return [], []
+
+def display_winners_losers():
+    """Visar top vinnare och förlorare"""
+    st.header("🏆 Vinnare/Förlorare Globalt")
+    st.markdown("Top 10 bästa vinnare och förlorare baserat på **dagens prisförändring** från alla aktier i databasen.")
+    
+    # Info om uppdatering
+    col_info1, col_info2 = st.columns([2, 1])
+    with col_info1:
+        st.caption("💡 Data hämtas från alla aktier i market_data.py och uppdateras automatiskt var 5:e minut.")
+    with col_info2:
+        if st.button("🔄 Uppdatera", use_container_width=True):
+            # Rensa cache för get_top_gainers_losers
+            get_top_gainers_losers.clear()
+            st.rerun()
+    
+    st.markdown("---")
+    
+    # Hämta data
+    top_gainers, top_losers = get_top_gainers_losers(limit=10)
+    
+    if not top_gainers and not top_losers:
+        st.warning("⚠️ Kunde inte hämta data. Försök igen om en stund.")
+        return
+    
+    # Visa i två kolumner
+    col_gainers, col_losers = st.columns(2)
+    
+    with col_gainers:
+        st.subheader("📈 Top 10 Vinnare")
+        if top_gainers:
+            df_gainers = pd.DataFrame(top_gainers)
+            
+            # Formatera förändring med färg
+            def format_change(val):
+                if isinstance(val, (int, float)):
+                    if val > 0:
+                        return f"+{val:.2f}%"
+                    else:
+                        return f"{val:.2f}%"
+                return val
+            
+            df_gainers['Förändring (%)'] = df_gainers['Förändring (%)'].apply(format_change)
+            
+            # Sortera kolumner - viktigaste först
+            priority_cols = ['Ticker', 'Förändring (%)', 'Marknad', 'Pris']
+            existing_cols = list(df_gainers.columns)
+            ordered_cols = []
+            for col in priority_cols:
+                matches = [c for c in existing_cols if col.lower() in c.lower() or c.startswith(col)]
+                if matches:
+                    ordered_cols.extend(matches)
+                    existing_cols = [c for c in existing_cols if c not in matches]
+            ordered_cols.extend([c for c in existing_cols if c not in ordered_cols and c != 'Ticker_URL'])
+            df_gainers = df_gainers[ordered_cols]
+            
+            # Lägg till länkar
+            column_config_gainers = {}
+            if 'Ticker_URL' in df_gainers.columns:
+                try:
+                    df_gainers['🔗'] = df_gainers['Ticker_URL']
+                    column_config_gainers['🔗'] = st.column_config.LinkColumn(
+                        "Länk",
+                        help="Öppna på Yahoo Finance",
+                        display_text="Öppna"
+                    )
+                    df_gainers = df_gainers.drop(columns=['Ticker_URL'])
+                    # Lägg till länk-kolumnen efter Ticker
+                    if 'Ticker' in ordered_cols:
+                        ticker_idx = ordered_cols.index('Ticker')
+                        ordered_cols.insert(ticker_idx + 1, '🔗')
+                    df_gainers = df_gainers[ordered_cols]
+                except AttributeError:
+                    df_gainers['🔗 Länk'] = df_gainers.apply(
+                        lambda row: f"[Öppna]({row['Ticker_URL']})",
+                        axis=1
+                    )
+                    df_gainers = df_gainers.drop(columns=['Ticker_URL'])
+                    if 'Ticker' in ordered_cols:
+                        ticker_idx = ordered_cols.index('Ticker')
+                        ordered_cols.insert(ticker_idx + 1, '🔗 Länk')
+                    df_gainers = df_gainers[ordered_cols]
+            
+            # Färgkoda förändring
+            def color_gainers(val):
+                if isinstance(val, str) and '%' in val:
+                    if '+' in val:
+                        return 'background-color: #d4edda; color: #155724; font-weight: bold;'
+                return ''
+            
+            styled_gainers = df_gainers.style.applymap(
+                color_gainers,
+                subset=['Förändring (%)']
+            )
+            
+            if column_config_gainers:
+                st.dataframe(styled_gainers, use_container_width=True, height=400, column_config=column_config_gainers)
+            else:
+                st.dataframe(styled_gainers, use_container_width=True, height=400)
+        else:
+            st.info("Inga vinnare hittades.")
+    
+    with col_losers:
+        st.subheader("📉 Top 10 Förlorare")
+        if top_losers:
+            df_losers = pd.DataFrame(top_losers)
+            
+            # Formatera förändring
+            def format_change(val):
+                if isinstance(val, (int, float)):
+                    if val > 0:
+                        return f"+{val:.2f}%"
+                    else:
+                        return f"{val:.2f}%"
+                return val
+            
+            df_losers['Förändring (%)'] = df_losers['Förändring (%)'].apply(format_change)
+            
+            # Sortera kolumner - viktigaste först
+            priority_cols = ['Ticker', 'Förändring (%)', 'Marknad', 'Pris']
+            existing_cols = list(df_losers.columns)
+            ordered_cols = []
+            for col in priority_cols:
+                matches = [c for c in existing_cols if col.lower() in c.lower() or c.startswith(col)]
+                if matches:
+                    ordered_cols.extend(matches)
+                    existing_cols = [c for c in existing_cols if c not in matches]
+            ordered_cols.extend([c for c in existing_cols if c not in ordered_cols and c != 'Ticker_URL'])
+            df_losers = df_losers[ordered_cols]
+            
+            # Lägg till länkar
+            column_config_losers = {}
+            if 'Ticker_URL' in df_losers.columns:
+                try:
+                    df_losers['🔗'] = df_losers['Ticker_URL']
+                    column_config_losers['🔗'] = st.column_config.LinkColumn(
+                        "Länk",
+                        help="Öppna på Yahoo Finance",
+                        display_text="Öppna"
+                    )
+                    df_losers = df_losers.drop(columns=['Ticker_URL'])
+                    # Lägg till länk-kolumnen efter Ticker
+                    if 'Ticker' in ordered_cols:
+                        ticker_idx = ordered_cols.index('Ticker')
+                        ordered_cols.insert(ticker_idx + 1, '🔗')
+                    df_losers = df_losers[ordered_cols]
+                except AttributeError:
+                    df_losers['🔗 Länk'] = df_losers.apply(
+                        lambda row: f"[Öppna]({row['Ticker_URL']})",
+                        axis=1
+                    )
+                    df_losers = df_losers.drop(columns=['Ticker_URL'])
+                    if 'Ticker' in ordered_cols:
+                        ticker_idx = ordered_cols.index('Ticker')
+                        ordered_cols.insert(ticker_idx + 1, '🔗 Länk')
+                    df_losers = df_losers[ordered_cols]
+            
+            # Färgkoda förändring
+            def color_losers(val):
+                if isinstance(val, str) and '%' in val:
+                    if '+' not in val:
+                        return 'background-color: #f8d7da; color: #721c24; font-weight: bold;'
+                return ''
+            
+            styled_losers = df_losers.style.applymap(
+                color_losers,
+                subset=['Förändring (%)']
+            )
+            
+            if column_config_losers:
+                st.dataframe(styled_losers, use_container_width=True, height=400, column_config=column_config_losers)
+            else:
+                st.dataframe(styled_losers, use_container_width=True, height=400)
+        else:
+            st.info("Inga förlorare hittades.")
+    
+    st.markdown("---")
+    st.caption("💡 Data uppdateras automatiskt var 5:e minut. Klicka på länken för att se mer detaljer på Yahoo Finance.")
+
 # --- Huvudapplikation ---
 
 def main():
@@ -1162,6 +1447,17 @@ def main():
     
     st.markdown("---")
     
+    # Skapa flikar
+    tab1, tab2 = st.tabs(["🔍 Screener", "🏆 Vinnare/Förlorare Globalt"])
+    
+    with tab1:
+        show_screener()
+    
+    with tab2:
+        display_winners_losers()
+
+def show_screener():
+    """Huvudfunktion för screener-fliken"""
     # --- MARKNADSVAL ---
     st.sidebar.markdown("### 🌍 Marknader")
     

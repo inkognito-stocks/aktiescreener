@@ -141,6 +141,38 @@ st.markdown("""
         margin-top: 0.5rem;
     }
     
+    /* Fixerad knapp längst ner på skärmen */
+    .fixed-scan-button-container {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        background: white !important;
+        padding: 1rem !important;
+        border-top: 2px solid #e0e0e0 !important;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.1) !important;
+        z-index: 999 !important;
+        width: 100% !important;
+    }
+    
+    /* Justera padding för huvudinnehållet när fixerad knapp finns */
+    .main .block-container {
+        padding-bottom: 100px !important;
+    }
+    
+    /* Fixerad knapp styling */
+    .fixed-scan-button-container .stButton > button {
+        width: 100% !important;
+        font-size: 1.1rem !important;
+        font-weight: 700 !important;
+        padding: 0.75rem 1.5rem !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+    }
+    
+    .fixed-scan-button-container .stButton > button:hover {
+        box-shadow: 0 6px 8px rgba(0,0,0,0.15) !important;
+    }
+    
     /* Kompaktare multiselect */
     .stMultiSelect > div {
         padding: 0.25rem 0;
@@ -1753,10 +1785,10 @@ def show_screener():
     )
     
     st.sidebar.markdown("---")
-    start_btn = st.sidebar.button("🔍 Skanna Marknaden", type="primary", use_container_width=True)
+    start_btn_sidebar = st.sidebar.button("🔍 Skanna Marknaden", type="primary", use_container_width=True)
     
     # --- SÖKLOGIK ---
-    if start_btn:
+    if start_btn_sidebar:
         if not selected_markets:
             st.warning("⚠️ Välj minst en marknad!")
             return
@@ -1980,6 +2012,7 @@ def show_screener():
         - **Volymspikar** = Identifierar ovanligt hög omsättning
         - **Breakouts** = Hitta aktier som bryter genom viktiga prisnivåer
         """)
+    
 
 if __name__ == "__main__":
     main()

@@ -391,8 +391,9 @@ def process_batch_results(data, tickers_in_batch, price_range, pe_range, pb_rang
             news_hits = []
             is_swedish = ticker.endswith('.ST')
             
-            # Välj rätt nyhetskälla baserat på marknad
-            news_checker = check_placera_news if is_swedish else check_yf_news
+            # Tillfälligt: Använd Yahoo Finance för ALLA marknader (enklare och fungerar)
+            # Placera-scraping är opålitlig, väntar på Börsdata API
+            news_checker = check_yf_news
             
             if check_vinstvarning:
                 warning_keywords = []

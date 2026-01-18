@@ -1929,104 +1929,111 @@ def show_screener():
     
     st.sidebar.markdown("---")
     
-    # Prisförändring filter
+    # Prisförändring filter - checkbox för att aktivera/inaktivera
     use_price_change = st.sidebar.checkbox(
         "Använd prisförändring-filter",
         help="Aktivera för att filtrera aktier baserat på hur mycket de har gått upp eller ner över en vald tidsperiod. Perfekt för att hitta momentum-aktier eller dippar."
     )
     
-    if use_price_change:
-        price_change_period = st.sidebar.selectbox(
-            "Tidsperiod",
-            ["1 dag", "1 vecka", "1 månad", "3 månader"],
-            help="Hur långt bakåt ska prisförändringen beräknas? '1 dag' = jämför med igår, '1 vecka' = jämför med för 5 handelsdagar sedan, '1 månad' = jämför med för ~20 handelsdagar sedan."
-        )
-        
-        # Initiera session_state för prisförändring om det inte finns
-        if 'price_change_min' not in st.session_state:
-            st.session_state.price_change_min = 0.0
-        if 'price_change_max' not in st.session_state:
-            st.session_state.price_change_max = 20.0
-        
-        # Skapa två kolumner för min och max input
-        col_min, col_max = st.sidebar.columns(2)
-        
-        with col_min:
-            min_change_input = st.number_input(
-                "Min (%)",
-                min_value=-50.0,
-                max_value=100.0,
-                value=st.session_state.price_change_min,
-                step=0.5,
-                key="price_change_min_input",
-                help="Skriv in eller ändra minsta prisförändring (t.ex. -10 för -10%)"
-            )
-            st.session_state.price_change_min = min_change_input
-        
-        with col_max:
-            max_change_input = st.number_input(
-                "Max (%)",
-                min_value=-50.0,
-                max_value=100.0,
-                value=st.session_state.price_change_max,
-                step=0.5,
-                key="price_change_max_input",
-                help="Skriv in eller ändra största prisförändring (t.ex. +20 för +20%)"
-            )
-            st.session_state.price_change_max = max_change_input
-        
-        # Slider som synkroniseras med textfälten
-        price_change_range = st.sidebar.slider(
-            "Prisförändring (%)",
-            -50.0, 100.0, 
-            (st.session_state.price_change_min, st.session_state.price_change_max),
+    # Alltid visa filteralternativen (oavsett om checkboxen är ikryssad)
+    price_change_period = st.sidebar.selectbox(
+        "Tidsperiod",
+        ["1 dag", "1 vecka", "1 månad", "3 månader"],
+        help="Hur långt bakåt ska prisförändringen beräknas? '1 dag' = jämför med igår, '1 vecka' = jämför med för 5 handelsdagar sedan, '1 månad' = jämför med för ~20 handelsdagar sedan."
+    )
+    
+    # Initiera session_state för prisförändring om det inte finns
+    if 'price_change_min' not in st.session_state:
+        st.session_state.price_change_min = 0.0
+    if 'price_change_max' not in st.session_state:
+        st.session_state.price_change_max = 20.0
+    
+    # Skapa två kolumner för min och max input
+    col_min, col_max = st.sidebar.columns(2)
+    
+    with col_min:
+        min_change_input = st.number_input(
+            "Min (%)",
+            min_value=-50.0,
+            max_value=100.0,
+            value=st.session_state.price_change_min,
             step=0.5,
-            key="price_change_slider",
-            help="Dra slidern eller använd textfälten ovanför för att ange intervall. Exempel: 5-15% = aktier som gått upp 5-15%, -10% till -5% = aktier som fallit 5-10%."
+            key="price_change_min_input",
+            help="Skriv in eller ändra minsta prisförändring (t.ex. -10 för -10%)"
         )
-        
-        # Uppdatera session_state när slidern ändras
-        st.session_state.price_change_min = price_change_range[0]
-        st.session_state.price_change_max = price_change_range[1]
-        
-        # Volymfilter (valfritt)
-        use_volume_filter = st.sidebar.checkbox(
-            "📊 Filtrera på volym",
-            help="Aktivera för att bara visa aktier med ovanlig volym. Hög volym + uppgång = stark signal, låg volym + uppgång = svag signal. Perfekt för att hitta breakouts på hög volym."
+        st.session_state.price_change_min = min_change_input
+    
+    with col_max:
+        max_change_input = st.number_input(
+            "Max (%)",
+            min_value=-50.0,
+            max_value=100.0,
+            value=st.session_state.price_change_max,
+            step=0.5,
+            key="price_change_max_input",
+            help="Skriv in eller ändra största prisförändring (t.ex. +20 för +20%)"
         )
-        
-        if use_volume_filter:
-            # Initiera session_state för volym om det inte finns
-            if 'volume_threshold_value' not in st.session_state:
-                st.session_state.volume_threshold_value = 100
-            
-            volume_threshold_input = st.sidebar.number_input(
-                "Min. relativ volym (%)",
-                min_value=0,
-                max_value=500,
-                value=st.session_state.volume_threshold_value,
-                step=10,
-                key="volume_threshold_input",
-                help="Skriv in eller ändra minimum relativ volym (t.ex. 150 för 150%)"
-            )
-            st.session_state.volume_threshold_value = volume_threshold_input
-            
-            volume_threshold = st.sidebar.slider(
-                "Min. relativ volym (%)",
-                0, 500, 
-                st.session_state.volume_threshold_value,
-                step=10,
-                key="volume_threshold_slider",
-                help="Dra slidern eller använd textfältet ovanför. 100% = normal volym, 150% = 50% mer än normalt, 200% = dubbel volym. Högre värden = bara aktier med ovanligt hög omsättning (breakouts, nyheter)."
-            )
-            
-            # Uppdatera session_state när slidern ändras
-            st.session_state.volume_threshold_value = volume_threshold
-        else:
-            volume_threshold = None
+        st.session_state.price_change_max = max_change_input
+    
+    # Slider som synkroniseras med textfälten
+    price_change_range_slider = st.sidebar.slider(
+        "Prisförändring (%)",
+        -50.0, 100.0, 
+        (st.session_state.price_change_min, st.session_state.price_change_max),
+        step=0.5,
+        key="price_change_slider",
+        help="Dra slidern eller använd textfälten ovanför för att ange intervall. Exempel: 5-15% = aktier som gått upp 5-15%, -10% till -5% = aktier som fallit 5-10%."
+    )
+    
+    # Uppdatera session_state när slidern ändras
+    st.session_state.price_change_min = price_change_range_slider[0]
+    st.session_state.price_change_max = price_change_range_slider[1]
+    
+    # Sätt price_change_range baserat på om filtret är aktiverat
+    if use_price_change:
+        price_change_range = price_change_range_slider
     else:
-        price_change_period = None
         price_change_range = None
+        price_change_period = None
+    
+    # Volymfilter - checkbox för att aktivera/inaktivera
+    use_volume_filter = st.sidebar.checkbox(
+        "📊 Filtrera på volym",
+        help="Aktivera för att bara visa aktier med ovanlig volym. Hög volym + uppgång = stark signal, låg volym + uppgång = svag signal. Perfekt för att hitta breakouts på hög volym."
+    )
+    
+    # Alltid visa volymfilteralternativen (oavsett om checkboxen är ikryssad)
+    # Initiera session_state för volym om det inte finns
+    if 'volume_threshold_value' not in st.session_state:
+        st.session_state.volume_threshold_value = 100
+    
+    volume_threshold_input = st.sidebar.number_input(
+        "Min. relativ volym (%)",
+        min_value=0,
+        max_value=500,
+        value=st.session_state.volume_threshold_value,
+        step=10,
+        key="volume_threshold_input",
+        help="Skriv in eller ändra minimum relativ volym (t.ex. 150 för 150%)"
+    )
+    st.session_state.volume_threshold_value = volume_threshold_input
+    
+    volume_threshold_slider = st.sidebar.slider(
+        "Min. relativ volym (%)",
+        0, 500, 
+        st.session_state.volume_threshold_value,
+        step=10,
+        key="volume_threshold_slider",
+        help="Dra slidern eller använd textfältet ovanför. 100% = normal volym, 150% = 50% mer än normalt, 200% = dubbel volym. Högre värden = bara aktier med ovanligt hög omsättning (breakouts, nyheter)."
+    )
+    
+    # Uppdatera session_state när slidern ändras
+    st.session_state.volume_threshold_value = volume_threshold_slider
+    
+    # Sätt volume_threshold baserat på om filtret är aktiverat
+    if use_volume_filter:
+        volume_threshold = volume_threshold_slider
+    else:
         volume_threshold = None
     
     st.sidebar.markdown("---")

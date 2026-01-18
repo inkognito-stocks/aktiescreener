@@ -328,7 +328,7 @@ def check_earnings_date(ticker_symbol, days_range=30):
 def process_batch_results(data, tickers_in_batch, price_range, pe_range, pb_range, 
                           use_pe, use_pb, streak_filter, check_vinstvarning, check_rapport,
                           check_insider, check_ny_vd, use_price_change, price_change_period, 
-                          price_change_range):
+                          price_change_range, volume_threshold):
     """
     Processar resultatet från en batch-download
     """
@@ -367,8 +367,12 @@ def process_batch_results(data, tickers_in_batch, price_range, pe_range, pb_rang
             if not (min_streak <= streak <= max_streak):
                 continue
             
-            # Prisförändring-filter
+            # Prisförändring-filter med volymanalys
             price_change_pct = None
+            relative_volume = None
+            avg_volume = None
+            period_volume = None
+            
             if use_price_change:
                 # Bestäm hur många dagar tillbaka baserat på period
                 period_map = {
@@ -389,6 +393,26 @@ def process_batch_results(data, tickers_in_batch, price_range, pe_range, pb_rang
                     min_change, max_change = price_change_range
                     if not (min_change <= price_change_pct <= max_change):
                         continue
+                    
+                    # Beräkna volymanalys
+                    if 'Volume' in ticker_data.columns:
+                        volumes = ticker_data['Volume'].dropna()
+                        
+                        if len(volumes) > max(days_back, 90):
+                            # Genomsnittlig volym över längre period (90 dagar som baseline)
+                            avg_volume = float(volumes.iloc[-91:-1].mean())
+                            
+                            # Genomsnittlig volym under prisförändring-perioden
+                            period_volume = float(volumes.iloc[-days_back-1:-1].mean())
+                            
+                            # Relativ volym (hur mycket högre/lägre än normalt)
+                            if avg_volume > 0:
+                                relative_volume = (period_volume / avg_volume) * 100
+                                
+                                # Filtrera på relativ volym om aktiverat
+                                if volume_threshold is not None:
+                                    if relative_volume < volume_threshold:
+                                        continue
                 else:
                     # Inte tillräckligt med historik, skippa denna aktie
                     continue
@@ -505,6 +529,21 @@ def process_batch_results(data, tickers_in_batch, price_range, pe_range, pb_rang
             # Lägg till prisförändring om filtret är aktivt
             if use_price_change and price_change_pct is not None:
                 result_dict[f"Förändring ({price_change_period})"] = f"{price_change_pct:+.2f}%"
+                
+                # Lägg till volymdata om tillgängligt
+                if relative_volume is not None:
+                    # Formatera volym för läsbarhet
+                    def format_volume(vol):
+                        if vol >= 1_000_000:
+                            return f"{vol/1_000_000:.1f}M"
+                        elif vol >= 1_000:
+                            return f"{vol/1_000:.0f}K"
+                        else:
+                            return f"{vol:.0f}"
+                    
+                    result_dict["Relativ Volym"] = f"{relative_volume:.0f}%"
+                    result_dict["Ø Volym (90d)"] = format_volume(avg_volume)
+                    result_dict[f"Ø Volym ({price_change_period})"] = format_volume(period_volume)
             
             result_dict["Händelser"] = news_text
             
@@ -612,9 +651,26 @@ def main():
             step=0.5,
             help="Filtrera bolag som gått upp/ner inom detta intervall"
         )
+        
+        # Volymfilter (valfritt)
+        use_volume_filter = st.sidebar.checkbox(
+            "📊 Filtrera på volym",
+            help="Välj bara aktier med ovanlig volym (högre/lägre än normalt)"
+        )
+        
+        if use_volume_filter:
+            volume_threshold = st.sidebar.slider(
+                "Min. relativ volym (%)",
+                0, 500, 100,
+                step=10,
+                help="100% = normal volym, 200% = dubbel volym, 50% = halv volym"
+            )
+        else:
+            volume_threshold = None
     else:
         price_change_period = None
         price_change_range = None
+        volume_threshold = None
     
     st.sidebar.markdown("---")
     start_btn = st.sidebar.button("🔍 Skanna Marknaden", type="primary", use_container_width=True)
@@ -669,7 +725,8 @@ def main():
                     batch_data, batch, price_range, pe_range, pb_range,
                     use_pe_filter, use_pb_filter, streak_filter,
                     check_vinstvarning, check_rapport, check_insider, check_ny_vd,
-                    use_price_change, price_change_period, price_change_range
+                    use_price_change, price_change_period, price_change_range,
+                    volume_threshold
                 )
                 all_results.extend(batch_results)
                 

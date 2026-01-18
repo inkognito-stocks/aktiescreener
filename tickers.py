@@ -7,7 +7,7 @@ ticker_lists = {
     "Sverige 🇸🇪": {
         "Large Cap (OMXS30 & Co)": [
             "ABB.ST", "ALFA.ST", "ASSA-B.ST", "AZN.ST", "ATCO-A.ST", "ATCO-B.ST",
-            "AXFO.ST", "BOL.ST", "CAST.ST", "ELUX-B.ST", "ERIC-B.ST", "ESSITY-B.ST",
+            "AXFO.ST", "BETS-B.ST", "BOL.ST", "CAST.ST", "ELUX-B.ST", "ERIC-B.ST", "ESSITY-B.ST",
             "EVO.ST", "GETI-B.ST", "HM-B.ST", "SHB-A.ST", "HEXA-B.ST", "HOLM-B.ST",
             "HUSQ-B.ST", "INDT.ST", "INVE-B.ST", "KINN-B.ST", "LATO-B.ST", "LIFCO-B.ST",
             "NIBE-B.ST", "NDA-SE.ST", "SAAB-B.ST", "SAND.ST", "SCA-B.ST", "SEB-A.ST",

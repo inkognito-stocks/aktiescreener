@@ -73,26 +73,48 @@ def check_yf_news(ticker_symbol, keywords_list, days_back=30):
         if not news:
             return None
         
-        # Filtrera nyheter från senaste X dagarna
-        cutoff_date = datetime.now() - timedelta(days=days_back)
+        # Filtrera nyheter från senaste X dagarna (gör båda timezone-aware eller naive)
+        cutoff_date = datetime.now()
         
         for article in news:
-            # Kontrollera publiceringsdatum
-            pub_timestamp = article.get('providerPublishTime', 0)
-            pub_date = datetime.fromtimestamp(pub_timestamp)
+            # Hantera både gamla och nya strukturer från yfinance
+            content = article.get('content', article)
             
-            if pub_date < cutoff_date:
+            # Kontrollera publiceringsdatum
+            pub_timestamp = content.get('providerPublishTime', article.get('providerPublishTime', 0))
+            if pub_timestamp == 0:
+                # Försök hämta från pubDate om providerPublishTime saknas
+                pub_date_str = content.get('pubDate', '')
+                if pub_date_str:
+                    try:
+                        # Parse ISO date och ta bort timezone info för enklare jämförelse
+                        pub_date = datetime.fromisoformat(pub_date_str.replace('Z', '+00:00'))
+                        pub_date = pub_date.replace(tzinfo=None)  # Gör naive för jämförelse
+                    except:
+                        continue
+                else:
+                    continue
+            else:
+                pub_date = datetime.fromtimestamp(pub_timestamp)
+            
+            # Kontrollera om nyheten är inom tidsperioden
+            days_diff = (cutoff_date - pub_date).days
+            if days_diff > days_back or days_diff < 0:
                 continue
             
-            title = article.get('title', '').lower()
+            # Hämta title och summary från rätt plats
+            title = content.get('title', '').lower()
+            summary = content.get('summary', '').lower()
             
-            # Sök efter nyckelord i titeln
+            # Sök efter nyckelord i titel OCH summary för bättre träffsäkerhet
+            search_text = f"{title} {summary}"
+            
             for keyword in keywords_list:
-                if keyword.lower() in title:
+                if keyword.lower() in search_text:
                     return {
-                        'title': article.get('title', ''),
-                        'link': article.get('link', ''),
-                        'publisher': article.get('publisher', ''),
+                        'title': content.get('title', 'No title'),
+                        'link': content.get('canonicalUrl', {}).get('url', ''),
+                        'publisher': content.get('provider', {}).get('displayName', 'Unknown'),
                         'date': pub_date
                     }
         
@@ -187,9 +209,18 @@ def process_single_ticker(symbol, price_range, use_pe_filter, pe_range, use_pb_f
         if check_vinstvarning:
             warning_keywords = []
             if is_swedish:
-                warning_keywords = ['vinstvarning', 'sänker prognos', 'nedjusterar', 'varning']
+                # För svenska bolag: använd BÅDE svenska OCH engelska ord (Yahoo Finance ger ofta engelska artiklar)
+                warning_keywords = [
+                    'vinstvarning', 'sänker prognos', 'nedjusterar', 'varning', 'vinstvarning',
+                    'profit warning', 'lowers', 'lower', 'cuts', 'reduces', 'downgrade', 
+                    'warning', 'miss', 'disappoints', 'weak', 'below expectations'
+                ]
             else:
-                warning_keywords = ['profit warning', 'lowers guidance', 'downgrade', 'warning', 'miss']
+                warning_keywords = [
+                    'profit warning', 'lowers guidance', 'lower guidance', 'cuts guidance',
+                    'downgrade', 'warning', 'miss', 'misses', 'disappoints', 'weak results',
+                    'below expectations', 'reduces'
+                ]
             
             yf_hit = check_yf_news(symbol, warning_keywords, days_back=30)
             if yf_hit:

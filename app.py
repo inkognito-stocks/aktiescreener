@@ -671,98 +671,7 @@ def main():
     
     st.sidebar.markdown("---")
     
-    # Snabb sökning-läge
-    snabb_sokning = st.sidebar.checkbox(
-        "⚡ Snabb sökning (skippa händelser)", 
-        value=False,
-        help="Mycket snabbare (10-20x) men ingen nyhetssökning. Perfekt för explorativ sökning!"
-    )
-    
-    st.sidebar.subheader("📰 Händelser")
-    
-    # Inaktivera händelsefilter om snabb sökning är på
-    if snabb_sokning:
-        st.sidebar.info("🚀 Snabb sökning aktiverad - händelsefilter inaktiverade")
-        check_vinstvarning = False
-        check_rapport = False
-        check_insider = False
-        check_ny_vd = False
-    else:
-        check_vinstvarning = st.sidebar.checkbox(
-            "⚠️ Vinstvarning",
-            help="Hitta aktier som har varnat för sämre resultat eller sänkt prognos. Inkluderar både hårda varningar och mjukare 'resultatuppdateringar'."
-        )
-        check_rapport = st.sidebar.checkbox(
-            "📊 Rapport (30 dagar)",
-            help="Hitta aktier som har eller kommer att släppa kvartals-/årsrapport inom de närmaste 30 dagarna. Bra för att hitta aktier inför earnings."
-        )
-        check_insider = st.sidebar.checkbox(
-            "👤 Insider",
-            help="Hitta aktier där insiders (VD, styrelse, större ägare) har köpt eller sålt aktier. Insiderköp kan vara ett positivt tecken."
-        )
-        check_ny_vd = st.sidebar.checkbox(
-            "🎯 Ny VD",
-            help="Hitta aktier som har fått ny VD eller ledningsändringar. Nya ledare kan innebära strategiförändringar och aktiekursrörelser."
-        )
-    
-    st.sidebar.subheader("📈 Teknisk Trend")
-    
-    # Initiera session_state för trend
-    if 'trend_min' not in st.session_state:
-        st.session_state.trend_min = -15
-    if 'trend_max' not in st.session_state:
-        st.session_state.trend_max = 15
-    
-    # Skapa två kolumner för min och max input
-    col_trend_min, col_trend_max = st.sidebar.columns(2)
-    
-    with col_trend_min:
-        trend_min_input = st.number_input(
-            "Min (dagar)",
-            min_value=-15,
-            max_value=15,
-            value=st.session_state.trend_min,
-            step=1,
-            key="trend_min_input",
-            help="Skriv in minsta antal dagar (t.ex. -5 för -5 dagar)"
-        )
-        st.session_state.trend_min = int(trend_min_input)
-    
-    with col_trend_max:
-        trend_max_input = st.number_input(
-            "Max (dagar)",
-            min_value=-15,
-            max_value=15,
-            value=st.session_state.trend_max,
-            step=1,
-            key="trend_max_input",
-            help="Skriv in största antal dagar (t.ex. +10 för +10 dagar)"
-        )
-        st.session_state.trend_max = int(trend_max_input)
-    
-    streak_filter = st.sidebar.slider(
-        "Trend (Dagar upp/ner)", 
-        -15, 15, 
-        (st.session_state.trend_min, st.session_state.trend_max),
-        key="trend_slider",
-        help="Dra slidern eller använd textfälten ovanför. Exempel: +3 till +10 = aktier som stängt uppåt 3-10 dagar i rad. -5 till -1 = aktier som stängt nedåt 1-5 dagar i rad."
-    )
-    
-    # Uppdatera session_state när slidern ändras
-    st.session_state.trend_min = streak_filter[0]
-    st.session_state.trend_max = streak_filter[1]
-    
-    # Utvecklingsperiod (alltid synlig)
-    st.sidebar.markdown("---")
-    development_period = st.sidebar.selectbox(
-        "📊 Utvecklingsperiod",
-        ["1 dag", "1 vecka", "1 månad", "3 månader", "6 månader", "12 månader", "3 år", "5 år"],
-        index=0,
-        help="Välj tidsperiod för utvecklingskolumnen i resultaten. Visar hur mycket aktien har gått upp/ner över den valda perioden. Exempel: '1 månad' visar utveckling senaste månaden, '3 år' visar långsiktig utveckling."
-    )
-    
     # Prisförändring filter
-    st.sidebar.markdown("---")
     use_price_change = st.sidebar.checkbox(
         "Använd prisförändring-filter",
         help="Aktivera för att filtrera aktier baserat på hur mycket de har gått upp eller ner över en vald tidsperiod. Perfekt för att hitta momentum-aktier eller dippar."
@@ -861,6 +770,98 @@ def main():
         price_change_period = None
         price_change_range = None
         volume_threshold = None
+    
+    st.sidebar.markdown("---")
+    
+    # Snabb sökning-läge
+    snabb_sokning = st.sidebar.checkbox(
+        "⚡ Snabb sökning (skippa händelser)", 
+        value=False,
+        help="Mycket snabbare (10-20x) men ingen nyhetssökning. Perfekt för explorativ sökning!"
+    )
+    
+    st.sidebar.subheader("📰 Händelser")
+    
+    # Inaktivera händelsefilter om snabb sökning är på
+    if snabb_sokning:
+        st.sidebar.info("🚀 Snabb sökning aktiverad - händelsefilter inaktiverade")
+        check_vinstvarning = False
+        check_rapport = False
+        check_insider = False
+        check_ny_vd = False
+    else:
+        check_vinstvarning = st.sidebar.checkbox(
+            "⚠️ Vinstvarning",
+            help="Hitta aktier som har varnat för sämre resultat eller sänkt prognos. Inkluderar både hårda varningar och mjukare 'resultatuppdateringar'."
+        )
+        check_rapport = st.sidebar.checkbox(
+            "📊 Rapport (30 dagar)",
+            help="Hitta aktier som har eller kommer att släppa kvartals-/årsrapport inom de närmaste 30 dagarna. Bra för att hitta aktier inför earnings."
+        )
+        check_insider = st.sidebar.checkbox(
+            "👤 Insider",
+            help="Hitta aktier där insiders (VD, styrelse, större ägare) har köpt eller sålt aktier. Insiderköp kan vara ett positivt tecken."
+        )
+        check_ny_vd = st.sidebar.checkbox(
+            "🎯 Ny VD",
+            help="Hitta aktier som har fått ny VD eller ledningsändringar. Nya ledare kan innebära strategiförändringar och aktiekursrörelser."
+        )
+    
+    st.sidebar.subheader("📈 Teknisk Trend")
+    
+    # Initiera session_state för trend
+    if 'trend_min' not in st.session_state:
+        st.session_state.trend_min = -15
+    if 'trend_max' not in st.session_state:
+        st.session_state.trend_max = 15
+    
+    # Skapa två kolumner för min och max input
+    col_trend_min, col_trend_max = st.sidebar.columns(2)
+    
+    with col_trend_min:
+        trend_min_input = st.number_input(
+            "Min (dagar)",
+            min_value=-15,
+            max_value=15,
+            value=st.session_state.trend_min,
+            step=1,
+            key="trend_min_input",
+            help="Skriv in minsta antal dagar (t.ex. -5 för -5 dagar)"
+        )
+        st.session_state.trend_min = int(trend_min_input)
+    
+    with col_trend_max:
+        trend_max_input = st.number_input(
+            "Max (dagar)",
+            min_value=-15,
+            max_value=15,
+            value=st.session_state.trend_max,
+            step=1,
+            key="trend_max_input",
+            help="Skriv in största antal dagar (t.ex. +10 för +10 dagar)"
+        )
+        st.session_state.trend_max = int(trend_max_input)
+    
+    streak_filter = st.sidebar.slider(
+        "Trend (Dagar upp/ner)", 
+        -15, 15, 
+        (st.session_state.trend_min, st.session_state.trend_max),
+        key="trend_slider",
+        help="Dra slidern eller använd textfälten ovanför. Exempel: +3 till +10 = aktier som stängt uppåt 3-10 dagar i rad. -5 till -1 = aktier som stängt nedåt 1-5 dagar i rad."
+    )
+    
+    # Uppdatera session_state när slidern ändras
+    st.session_state.trend_min = streak_filter[0]
+    st.session_state.trend_max = streak_filter[1]
+    
+    # Utvecklingsperiod (alltid synlig)
+    st.sidebar.markdown("---")
+    development_period = st.sidebar.selectbox(
+        "📊 Utvecklingsperiod",
+        ["1 dag", "1 vecka", "1 månad", "3 månader", "6 månader", "12 månader", "3 år", "5 år"],
+        index=0,
+        help="Välj tidsperiod för utvecklingskolumnen i resultaten. Visar hur mycket aktien har gått upp/ner över den valda perioden. Exempel: '1 månad' visar utveckling senaste månaden, '3 år' visar långsiktig utveckling."
+    )
     
     st.sidebar.markdown("---")
     start_btn = st.sidebar.button("🔍 Skanna Marknaden", type="primary", use_container_width=True)

@@ -145,69 +145,82 @@ def check_yf_news(ticker_symbol, keywords_list, days_back=30):
 @st.cache_data(ttl=1800)  # Cache i 30 minuter
 def check_placera_news(ticker_symbol, keywords_list, days_back=30):
     """
-    Söker ENDAST på Placera.se för svenska pressmeddelanden.
-    Enkel och pålitlig!
+    Söker på Placera.se med enkel sökstrategi.
     """
     try:
         # Ta bort .ST och formatera
-        clean_ticker = ticker_symbol.replace('.ST', '').replace('-', ' ')
+        clean_ticker = ticker_symbol.replace('.ST', '').replace('-', '')
         
-        # Bolagsnamn-mappning (ticker -> namn)
+        # Bolagsnamn-mappning (ticker -> namn för sökning)
         company_names = {
-            'BETS B': 'Betsson',
-            'HM B': 'H&M',
-            'VOLV B': 'Volvo',
-            'ERIC B': 'Ericsson',
-            'SEB A': 'SEB',
-            'SHB A': 'Handelsbanken',
-            'SWED A': 'Swedbank',
-            'SAND': 'Sandvik',
-            'ABB': 'ABB',
-            'AZN': 'AstraZeneca',
-            'HEXA B': 'Hexagon'
+            'BETSB': 'betsson',
+            'HMB': 'h-m',
+            'VOLVB': 'volvo',
+            'ERICB': 'ericsson',
+            'SEBA': 'seb',
+            'SHBA': 'handelsbanken',
+            'SWEDA': 'swedbank',
+            'SAND': 'sandvik',
+            'ABB': 'abb',
+            'AZN': 'astrazeneca',
+            'HEXAB': 'hexagon'
         }
         
-        # Använd mappat namn eller första delen av ticker
-        search_name = company_names.get(clean_ticker.upper(), clean_ticker.split()[0])
+        # Få bolagsnamn för sökning
+        search_name = company_names.get(clean_ticker.upper())
         
-        # Sök på Placera.se pressmeddelanden
-        url = f"https://www.placera.se/pressmeddelanden/{search_name.lower()}"
+        if not search_name:
+            # Fallback: använd första delen av tickern
+            search_name = clean_ticker[:4].lower()
         
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
         
-        response = requests.get(url, headers=headers, timeout=10)
+        # Strategi: Sök brett efter bolagsnamn + något nyckelord
+        # Ta det mest relevanta nyckelordet för initial sökning
+        primary_keywords = ['resultat', 'vinstvarning', 'uppdatering', 'warning', 'update']
         
-        if response.status_code != 200:
-            return None
-        
-        # Parse HTML
-        soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # Hitta alla länkar med "pressmeddelanden" i URL
-        all_links = soup.find_all('a', href=True)
-        
-        for link in all_links[:30]:  # Kolla de första 30 länkarna
-            href = link.get('href', '')
+        for primary_keyword in primary_keywords:
+            # Försök söka på Placera
+            search_url = f"https://www.placera.se/search?query={search_name}+{primary_keyword}"
             
-            # Kontrollera om det är ett pressmeddelande
-            if '/pressmeddelanden/' in href and search_name.lower() in href.lower():
-                # Hämta text från länken
-                link_text = link.get_text(strip=True).lower()
+            try:
+                response = requests.get(search_url, headers=headers, timeout=10)
                 
-                # Sök efter nyckelord
-                for keyword in keywords_list:
-                    if keyword.lower() in link_text:
-                        # Bygg fullständig URL
-                        full_url = href if href.startswith('http') else f"https://www.placera.se{href}"
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.text, 'html.parser')
+                    
+                    # Hitta alla länkar
+                    all_links = soup.find_all('a', href=True)
+                    
+                    for link in all_links[:40]:
+                        href = link.get('href', '')
+                        link_text = link.get_text(strip=True)
                         
-                        return {
-                            'title': link.get_text(strip=True),
-                            'link': full_url,
-                            'publisher': 'Placera',
-                            'date': datetime.now()  # Anta recent
-                        }
+                        # Måste vara ett pressmeddelande
+                        if '/pressmeddelanden/' not in href:
+                            continue
+                        
+                        # Måste innehålla bolagsnamn
+                        if search_name not in href.lower() and search_name not in link_text.lower():
+                            continue
+                        
+                        # Kolla alla nyckelord
+                        link_text_lower = link_text.lower()
+                        for keyword in keywords_list:
+                            if keyword.lower() in link_text_lower:
+                                # Bygg fullständig URL
+                                full_url = href if href.startswith('http') else f"https://www.placera.se{href}"
+                                
+                                return {
+                                    'title': link_text,
+                                    'link': full_url,
+                                    'publisher': 'Placera',
+                                    'date': datetime.now()
+                                }
+            except:
+                continue
         
         return None
         

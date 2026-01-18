@@ -143,143 +143,74 @@ def check_yf_news(ticker_symbol, keywords_list, days_back=30):
         return None
 
 @st.cache_data(ttl=1800)  # Cache i 30 minuter
-def check_cision_news(ticker_symbol, keywords_list, days_back=30):
+def check_placera_news(ticker_symbol, keywords_list, days_back=30):
     """
-    Söker i Cision/Placera press releases för SVENSKA bolag.
-    Mycket mer pålitlig än Yahoo Finance för svenska pressmeddelanden!
+    Söker ENDAST på Placera.se för svenska pressmeddelanden.
+    Enkel och pålitlig!
     """
     try:
-        # Ta bort .ST från ticker för att få bolagsnamn
-        company_code = ticker_symbol.replace('.ST', '').replace('-', ' ').lower()
+        # Ta bort .ST och formatera
+        clean_ticker = ticker_symbol.replace('.ST', '').replace('-', ' ')
         
-        # Mappa vissa ticker-koder till bolagens faktiska namn
-        company_map = {
-            'bets b': 'betsson',
-            'hm b': 'h&m',
-            'volv b': 'volvo',
-            'eric b': 'ericsson'
+        # Bolagsnamn-mappning (ticker -> namn)
+        company_names = {
+            'BETS B': 'Betsson',
+            'HM B': 'H&M',
+            'VOLV B': 'Volvo',
+            'ERIC B': 'Ericsson',
+            'SEB A': 'SEB',
+            'SHB A': 'Handelsbanken',
+            'SWED A': 'Swedbank',
+            'SAND': 'Sandvik',
+            'ABB': 'ABB',
+            'AZN': 'AstraZeneca',
+            'HEXA B': 'Hexagon'
         }
-        search_company = company_map.get(company_code, company_code.split()[0])
+        
+        # Använd mappat namn eller första delen av ticker
+        search_name = company_names.get(clean_ticker.upper(), clean_ticker.split()[0])
+        
+        # Sök på Placera.se pressmeddelanden
+        url = f"https://www.placera.se/pressmeddelanden/{search_name.lower()}"
         
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
         
-        # Försök 1: Placera.se (mer tillförlitlig HTML)
-        placera_url = f"https://www.placera.se/search?query={search_company}&tab=press"
+        response = requests.get(url, headers=headers, timeout=10)
         
-        try:
-            response = requests.get(placera_url, headers=headers, timeout=10)
-            if response.status_code == 200:
-                soup = BeautifulSoup(response.content, 'html.parser')
-                
-                # Hitta pressmeddelanden på Placera
-                articles = soup.find_all(['article', 'div'], class_=['feed-item', 'press-item', 'article'])
-                
-                cutoff_date = datetime.now()
-                
-                for article in articles[:20]:  # Kolla fler artiklar
-                    try:
-                        # Hitta titel - försök flera varianter
-                        title_elem = (article.find('h2') or 
-                                     article.find('h3') or 
-                                     article.find('a', class_='title') or
-                                     article.find('a'))
-                        
-                        if not title_elem:
-                            continue
-                            
-                        title = title_elem.get_text(strip=True)
-                        title_lower = title.lower()
-                        
-                        # Hitta innehåll/beskrivning
-                        content_elem = article.find('p') or article.find('div', class_='description')
-                        content = content_elem.get_text(strip=True).lower() if content_elem else ""
-                        
-                        # Kombinera för sökning
-                        search_text = f"{title_lower} {content}"
-                        
-                        # Datum - försök olika format
-                        date_elem = article.find('time')
-                        pub_date = None
-                        
-                        if date_elem:
-                            date_str = date_elem.get('datetime', date_elem.get_text(strip=True))
-                            try:
-                                # Hantera ISO format
-                                if 'T' in date_str:
-                                    pub_date = datetime.fromisoformat(date_str.replace('Z', ''))
-                                # Hantera "16 januari"
-                                elif 'januari' in date_str or 'jan' in date_str.lower():
-                                    pub_date = datetime.now()  # Antar recent
-                                else:
-                                    pub_date = datetime.strptime(date_str.split()[0], '%Y-%m-%d')
-                            except:
-                                pub_date = datetime.now()  # Fallback till nu
-                        
-                        if not pub_date:
-                            pub_date = datetime.now()  # Om inget datum hittas, anta recent
-                        
-                        days_diff = (cutoff_date - pub_date).days
-                        if days_diff > days_back:
-                            continue
-                        
-                        # Sök efter nyckelord
-                        for keyword in keywords_list:
-                            if keyword.lower() in search_text:
-                                link_elem = title_elem if title_elem.name == 'a' else article.find('a')
-                                link = link_elem.get('href', '') if link_elem else ''
-                                
-                                if link and not link.startswith('http'):
-                                    link = f"https://www.placera.se{link}"
-                                
-                                return {
-                                    'title': title,
-                                    'link': link,
-                                    'publisher': 'Cision/Placera',
-                                    'date': pub_date
-                                }
-                    except Exception as e:
-                        continue
-        except:
-            pass  # Försök nästa källa
+        if response.status_code != 200:
+            return None
         
-        # Försök 2: Direkt Cision
-        cision_url = f"https://news.cision.com/se/{search_company}"
-        try:
-            response = requests.get(cision_url, headers=headers, timeout=10)
-            if response.status_code == 200:
-                soup = BeautifulSoup(response.content, 'html.parser')
-                releases = soup.find_all('div', class_=['feed-item', 'release-item'])
+        # Parse HTML
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Hitta alla länkar med "pressmeddelanden" i URL
+        all_links = soup.find_all('a', href=True)
+        
+        for link in all_links[:30]:  # Kolla de första 30 länkarna
+            href = link.get('href', '')
+            
+            # Kontrollera om det är ett pressmeddelande
+            if '/pressmeddelanden/' in href and search_name.lower() in href.lower():
+                # Hämta text från länken
+                link_text = link.get_text(strip=True).lower()
                 
-                cutoff_date = datetime.now()
-                
-                for release in releases[:15]:
-                    try:
-                        title_elem = release.find('h3') or release.find('h2') or release.find('a')
-                        if not title_elem:
-                            continue
+                # Sök efter nyckelord
+                for keyword in keywords_list:
+                    if keyword.lower() in link_text:
+                        # Bygg fullständig URL
+                        full_url = href if href.startswith('http') else f"https://www.placera.se{href}"
                         
-                        title = title_elem.get_text(strip=True)
-                        search_text = title.lower()
-                        
-                        # Datum
-                        pub_date = datetime.now()  # Fallback
-                        
-                        for keyword in keywords_list:
-                            if keyword.lower() in search_text:
-                                return {
-                                    'title': title,
-                                    'link': cision_url,
-                                    'publisher': 'Cision',
-                                    'date': pub_date
-                                }
-                    except:
-                        continue
-        except:
-            pass
+                        return {
+                            'title': link.get_text(strip=True),
+                            'link': full_url,
+                            'publisher': 'Placera',
+                            'date': datetime.now()  # Anta recent
+                        }
         
         return None
+        
     except Exception as e:
         return None
 
@@ -374,7 +305,7 @@ def process_batch_results(data, tickers_in_batch, price_range, pe_range, pb_rang
             is_swedish = ticker.endswith('.ST')
             
             # Välj rätt nyhetskälla baserat på marknad
-            news_checker = check_cision_news if is_swedish else check_yf_news
+            news_checker = check_placera_news if is_swedish else check_yf_news
             
             if check_vinstvarning:
                 warning_keywords = []

@@ -2,6 +2,8 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import time
 
 # --- Inställningar ---
 st.set_page_config(page_title="AktieScreener AI", layout="wide")
@@ -132,6 +134,26 @@ ticker_lists = {
 
 # --- Hjälpfunktioner ---
 
+@st.cache_data(ttl=1800)  # Cache i 30 minuter
+def get_cached_stock_data(ticker_symbol):
+    """Hämtar grundläggande aktiedata och cachar det"""
+    try:
+        stock = yf.Ticker(ticker_symbol)
+        hist = stock.history(period="1d")
+        info = stock.info
+        
+        price = hist['Close'].iloc[-1] if not hist.empty else 0
+        
+        return {
+            'price': float(price),
+            'pe': info.get('trailingPE', None),
+            'pb': info.get('priceToBook', None),
+            'ticker': ticker_symbol
+        }
+    except:
+        return None
+
+@st.cache_data(ttl=1800)  # Cache i 30 minuter
 def get_streak(ticker_symbol):
     try:
         df = yf.download(ticker_symbol, period="1mo", progress=False)
@@ -241,6 +263,124 @@ def check_earnings_date(ticker_symbol, days_range=30):
                         return f"Släpps om {days_diff} dagar"
         return None
     except:
+        return None
+
+def process_single_ticker(symbol, price_range, use_pe_filter, pe_range, use_pb_filter, pb_range, 
+                          streak_filter, check_vinstvarning, check_rapport, check_insider, check_ny_vd):
+    """Processar en ticker och returnerar resultat eller None"""
+    try:
+        # Hämta grunddata (cachad)
+        basic_data = get_cached_stock_data(symbol)
+        if not basic_data:
+            return None
+        
+        price = basic_data['price']
+        
+        # Filter: Pris (snabbt - skippa tidigt)
+        if not (price_range[0] <= price <= price_range[1]):
+            return None
+        
+        # Hämta streak
+        streak = get_streak(symbol)
+        
+        # Filter: Trend (snabbt - skippa tidigt)
+        min_streak, max_streak = streak_filter
+        if not (min_streak <= streak <= max_streak):
+            return None
+        
+        # Hämta värderingsdata
+        pe = basic_data['pe']
+        pb = basic_data['pb']
+        
+        # Filter: P/E
+        if use_pe_filter and pe_range:
+            if pe is None or not (pe_range[0] <= pe <= pe_range[1]):
+                return None
+        
+        # Filter: P/B
+        if use_pb_filter and pb_range:
+            if pb is None or not (pb_range[0] <= pb <= pb_range[1]):
+                return None
+        
+        # Nu hämtar vi bara nyheter om vi behöver (långsammast)
+        news_hits = []
+        is_swedish = symbol.endswith('.ST')
+        is_canadian = symbol.endswith('.TO') or symbol.endswith('.V') or symbol.endswith('.CN')
+        
+        if check_vinstvarning:
+            warning_keywords = []
+            if is_swedish:
+                warning_keywords = ['vinstvarning', 'sänker prognos', 'nedjusterar', 'varning']
+            else:
+                warning_keywords = ['profit warning', 'lowers guidance', 'downgrade', 'warning', 'miss']
+            
+            yf_hit = check_yf_news(symbol, warning_keywords, days_back=30)
+            if yf_hit:
+                news_hits.append(f"⚠️ {yf_hit['title'][:50]}...")
+            else:
+                return None  # Vinstvarning krävdes men hittades inte
+        
+        if check_rapport:
+            earnings_info = check_earnings_date(symbol, days_range=30)
+            if earnings_info:
+                news_hits.append(f"📊 {earnings_info}")
+            else:
+                report_keywords = []
+                if is_swedish:
+                    report_keywords = ['kvartalsrapport', 'delårsrapport', 'Q1', 'Q2', 'Q3', 'Q4', 'earnings']
+                else:
+                    report_keywords = ['earnings', 'quarterly results', 'reports', 'Q1', 'Q2', 'Q3', 'Q4']
+                
+                yf_hit = check_yf_news(symbol, report_keywords, days_back=30)
+                if yf_hit:
+                    news_hits.append(f"📊 Rapport")
+        
+        if check_insider:
+            insider_keywords = []
+            if is_swedish:
+                insider_keywords = ['insider', 'köper', 'säljer', 'styrelse köp', 'vd köp', 'ledning köp', 
+                                   'insiderhandel', 'förvärvat', 'avyttrat']
+            else:
+                insider_keywords = ['insider', 'insider buying', 'insider selling', 'CEO bought', 
+                                   'director bought', 'executive bought', 'purchased', 'sold shares']
+            
+            yf_hit = check_yf_news(symbol, insider_keywords, days_back=30)
+            if yf_hit:
+                news_hits.append(f"👤 Insider: {yf_hit['title'][:40]}...")
+        
+        if check_ny_vd:
+            vd_keywords = []
+            if is_swedish:
+                vd_keywords = ['ny vd', 'vd avgår', 'tillträder', 'utsedd vd', 'ny ledning', 
+                               'ny ceo', 'ceo lämnar', 'styrelseordförande']
+            else:
+                vd_keywords = ['new ceo', 'ceo appointed', 'ceo resigns', 'ceo steps down', 
+                               'new chief executive', 'executive changes', 'management change', 
+                               'appointed ceo', 'named ceo']
+            
+            yf_hit = check_yf_news(symbol, vd_keywords, days_back=60)
+            if yf_hit:
+                news_hits.append(f"🎯 Ledning: {yf_hit['title'][:40]}...")
+        
+        # Avgör valuta
+        if symbol.endswith('.ST'):
+            currency = "SEK"
+        elif symbol.endswith('.TO') or symbol.endswith('.V') or symbol.endswith('.CN'):
+            currency = "CAD"
+        else:
+            currency = "USD"
+        
+        news_text = " | ".join(news_hits) if news_hits else "Ingen specifik händelse"
+        
+        return {
+            "Ticker": symbol,
+            f"Pris ({currency})": round(float(price), 2),
+            "P/E": round(pe, 2) if pe else "N/A",
+            "P/B": round(pb, 2) if pb else "N/A",
+            "Trend (Dagar)": streak,
+            "Händelser": news_text
+        }
+    except Exception as e:
         return None
 
 # --- Huvudapplikation ---
@@ -359,150 +499,54 @@ def main():
             st.warning("⚠️ Inga kategorier valda. Välj minst en kategori att scanna!")
             return
         
-        st.info(f"🔍 Skannar {total} aktier...")
+        st.info(f"🚀 Skannar {total} aktier parallellt (mycket snabbare!)...")
+        start_time = time.time()
         
-        for i, symbol in enumerate(tickers_to_scan):
-            status_text.text(f"Analyserar {symbol}... ({i+1}/{total})")
-            progress_bar.progress((i + 1) / total)
+        # Använd ThreadPoolExecutor för att processa flera aktier samtidigt
+        completed = 0
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            # Skicka alla jobs
+            future_to_ticker = {
+                executor.submit(
+                    process_single_ticker, 
+                    symbol, 
+                    price_range, 
+                    use_pe_filter, 
+                    pe_range, 
+                    use_pb_filter, 
+                    pb_range,
+                    streak_filter, 
+                    check_vinstvarning, 
+                    check_rapport, 
+                    check_insider, 
+                    check_ny_vd
+                ): symbol for symbol in tickers_to_scan
+            }
             
-            stock = yf.Ticker(symbol)
-            streak = get_streak(symbol)
-            
-            # Hämta pris
-            try:
-                hist = stock.history(period="1d")
-                if not hist.empty:
-                    price = hist['Close'].iloc[-1]
-                else:
-                    price = 0
-            except:
-                price = 0
-
-            # Filter: Pris
-            if not (price_range[0] <= price <= price_range[1]):
-                continue
-
-            # Hämta värderingsdata
-            valuation = get_valuation_metrics(symbol)
-            
-            # Filter: P/E
-            if use_pe_filter and pe_range:
-                pe = valuation['pe']
-                if pe is None or not (pe_range[0] <= pe <= pe_range[1]):
-                    continue
-            
-            # Filter: P/B
-            if use_pb_filter and pb_range:
-                pb = valuation['pb']
-                if pb is None or not (pb_range[0] <= pb <= pb_range[1]):
-                    continue
-
-            # Filter: Trend
-            min_streak, max_streak = streak_filter
-            if not (min_streak <= streak <= max_streak):
-                continue
-
-            # Filter: Nyheter och händelser (Yahoo Finance Press Releases)
-            news_hits = []
-            match = True
-            
-            # Avgör vilka nyckelord som är relevanta baserat på marknad
-            is_swedish = symbol.endswith('.ST')
-            is_canadian = symbol.endswith('.TO') or symbol.endswith('.V') or symbol.endswith('.CN')
-            is_us = not (is_swedish or is_canadian)
-            
-            if check_vinstvarning:
-                # Sök efter vinstvarning/profit warning i Yahoo Finance news
-                warning_keywords = []
-                if is_swedish:
-                    warning_keywords = ['vinstvarning', 'sänker prognos', 'nedjusterar', 'varning']
-                else:
-                    warning_keywords = ['profit warning', 'lowers guidance', 'downgrade', 'warning', 'miss']
+            # Samla resultat när de blir klara
+            for future in as_completed(future_to_ticker):
+                completed += 1
+                symbol = future_to_ticker[future]
+                progress_bar.progress(completed / total)
+                status_text.text(f"⚡ Analyserat {completed}/{total} aktier...")
                 
-                yf_hit = check_yf_news(symbol, warning_keywords, days_back=30)
-                if yf_hit:
-                    news_hits.append(f"⚠️ {yf_hit['title'][:50]}...")
-                else:
-                    match = False
-
-            if check_rapport:
-                # Kontrollera rapportdatum (fungerar för alla marknader)
-                earnings_info = check_earnings_date(symbol, days_range=30)
-                if earnings_info:
-                    news_hits.append(f"📊 {earnings_info}")
-                else:
-                    # Sök efter rapport i Yahoo Finance news
-                    report_keywords = []
-                    if is_swedish:
-                        report_keywords = ['kvartalsrapport', 'delårsrapport', 'Q1', 'Q2', 'Q3', 'Q4', 'earnings']
-                    else:
-                        report_keywords = ['earnings', 'quarterly results', 'reports', 'Q1', 'Q2', 'Q3', 'Q4']
-                    
-                    yf_hit = check_yf_news(symbol, report_keywords, days_back=30)
-                    if yf_hit:
-                        news_hits.append(f"📊 Rapport")
-            
-            if check_insider:
-                # Sök efter insidertransaktioner
-                insider_keywords = []
-                if is_swedish:
-                    insider_keywords = ['insider', 'köper', 'säljer', 'styrelse köp', 'vd köp', 'ledning köp', 
-                                       'insiderhandel', 'förvärvat', 'avyttrat']
-                else:
-                    insider_keywords = ['insider', 'insider buying', 'insider selling', 'CEO bought', 
-                                       'director bought', 'executive bought', 'purchased', 'sold shares']
-                
-                yf_hit = check_yf_news(symbol, insider_keywords, days_back=30)
-                if yf_hit:
-                    news_hits.append(f"👤 Insider: {yf_hit['title'][:40]}...")
-            
-            if check_ny_vd:
-                # Sök efter VD-byten och ledningsförändringar
-                vd_keywords = []
-                if is_swedish:
-                    vd_keywords = ['ny vd', 'vd avgår', 'tillträder', 'utsedd vd', 'ny ledning', 
-                                   'ny ceo', 'ceo lämnar', 'styrelseordförande']
-                else:
-                    vd_keywords = ['new ceo', 'ceo appointed', 'ceo resigns', 'ceo steps down', 
-                                   'new chief executive', 'executive changes', 'management change', 
-                                   'appointed ceo', 'named ceo']
-                
-                yf_hit = check_yf_news(symbol, vd_keywords, days_back=60)
-                if yf_hit:
-                    news_hits.append(f"🎯 Ledning: {yf_hit['title'][:40]}...")
-            
-            # Om vinstvarning var ikryssad men inte hittades, skippa bolaget
-            if check_vinstvarning and not match:
-                continue
-            
-            # Lägg till resultat
-            news_text = " | ".join(news_hits) if news_hits else "Ingen specifik händelse"
-            
-            # Avgör valuta
-            if symbol.endswith('.ST'):
-                currency = "SEK"
-            elif symbol.endswith('.TO') or symbol.endswith('.V') or symbol.endswith('.CN'):
-                currency = "CAD"
-            else:
-                currency = "USD"
-            
-            results.append({
-                "Ticker": symbol,
-                f"Pris ({currency})": round(float(price), 2),
-                "P/E": round(valuation['pe'], 2) if valuation['pe'] else "N/A",
-                "P/B": round(valuation['pb'], 2) if valuation['pb'] else "N/A",
-                "Trend (Dagar)": streak,
-                "Händelser": news_text
-            })
+                try:
+                    result = future.result()
+                    if result:
+                        results.append(result)
+                except Exception as e:
+                    pass  # Skippa aktier som ger fel
 
         status_text.empty()
         progress_bar.empty()
+        
+        elapsed_time = time.time() - start_time
 
         if len(results) > 0:
             # Begränsa till max 40 resultat
             results = results[:40]
             
-            st.success(f"✅ Hittade {len(results)} bolag som matchar dina kriterier!")
+            st.success(f"✅ Hittade {len(results)} bolag som matchar dina kriterier på {elapsed_time:.1f} sekunder!")
             df_results = pd.DataFrame(results)
             
             # Visa statistik

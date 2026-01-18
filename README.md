@@ -25,6 +25,14 @@ En kraftfull sökmotor för aktier från **Sverige, Kanada och USA** med avancer
 - **P/B-tal** (Price/Book) - Pris i förhållande till bokfört värde
 - Valfria filter som kan aktiveras/inaktiveras
 
+### 📰 Händelsefilter (Yahoo Finance Press Releases)
+- ⚠️ **Vinstvarning / Profit Warning** - Söker efter vinstvarningar och nedgraderingar
+- 📊 **Rapport** - Kvartalsrapporter (släppta eller kommande inom 30 dagar)
+- 👤 **Insidertransaktioner** - Insiderköp och insiderförsäljning
+- 🎯 **Ny VD/ledning** - VD-byten och ledningsförändringar
+
+**OBS:** Yahoo Finance kan ha fördröjningar för svenska pressmeddelanden (1-3 dagar)
+
 ### 📈 Teknisk Trend
 - Filtrera på antal dagar aktien gått upp eller ner i rad
 - -15 till +15 dagar

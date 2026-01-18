@@ -64,8 +64,85 @@ def get_market_from_ticker(ticker):
     else:
         return 'USA 🇺🇸'
 
+def check_yf_news(ticker_symbol, keywords_list, days_back=30):
+    """
+    Söker i Yahoo Finance press releases och nyheter för en ticker
+    efter specifika nyckelord.
+    """
+    try:
+        stock = yf.Ticker(ticker_symbol)
+        news = stock.news
+        
+        if not news:
+            return None
+        
+        cutoff_date = datetime.now()
+        
+        for article in news:
+            content = article.get('content', article)
+            
+            pub_timestamp = content.get('providerPublishTime', article.get('providerPublishTime', 0))
+            if pub_timestamp == 0:
+                pub_date_str = content.get('pubDate', '')
+                if pub_date_str:
+                    try:
+                        pub_date = datetime.fromisoformat(pub_date_str.replace('Z', '+00:00'))
+                        pub_date = pub_date.replace(tzinfo=None)
+                    except:
+                        continue
+                else:
+                    continue
+            else:
+                pub_date = datetime.fromtimestamp(pub_timestamp)
+            
+            days_diff = (cutoff_date - pub_date).days
+            if days_diff > days_back or days_diff < 0:
+                continue
+            
+            title = content.get('title', '').lower()
+            summary = content.get('summary', '').lower()
+            search_text = f"{title} {summary}"
+            
+            for keyword in keywords_list:
+                if keyword.lower() in search_text:
+                    return {
+                        'title': content.get('title', 'No title'),
+                        'link': content.get('canonicalUrl', {}).get('url', ''),
+                        'publisher': content.get('provider', {}).get('displayName', 'Unknown'),
+                        'date': pub_date
+                    }
+        
+        return None
+    except Exception as e:
+        return None
+
+def check_earnings_date(ticker_symbol, days_range=30):
+    """Kontrollerar om rapport ska släppas inom X dagar eller släpptes nyligen"""
+    try:
+        stock = yf.Ticker(ticker_symbol)
+        calendar = stock.calendar
+        
+        if calendar is not None and 'Earnings Date' in calendar:
+            earnings_date = calendar['Earnings Date']
+            if isinstance(earnings_date, pd.Series) and len(earnings_date) > 0:
+                earnings_date = earnings_date.iloc[0]
+            
+            if pd.notna(earnings_date):
+                today = datetime.now()
+                days_diff = (earnings_date - today).days
+                
+                if -days_range <= days_diff <= days_range:
+                    if days_diff < 0:
+                        return f"Släpptes för {abs(days_diff)} dagar sedan"
+                    else:
+                        return f"Släpps om {days_diff} dagar"
+        return None
+    except:
+        return None
+
 def process_batch_results(data, tickers_in_batch, price_range, pe_range, pb_range, 
-                          use_pe, use_pb, streak_filter):
+                          use_pe, use_pb, streak_filter, check_vinstvarning, check_rapport,
+                          check_insider, check_ny_vd):
     """
     Processar resultatet från en batch-download
     """
@@ -125,6 +202,68 @@ def process_batch_results(data, tickers_in_batch, price_range, pe_range, pb_rang
                 if pb is None or not (pb_range[0] <= pb <= pb_range[1]):
                     continue
             
+            # --- HÄNDELSE-FILTRERING ---
+            news_hits = []
+            is_swedish = ticker.endswith('.ST')
+            
+            if check_vinstvarning:
+                warning_keywords = []
+                if is_swedish:
+                    warning_keywords = [
+                        'vinstvarning', 'sänker prognos', 'nedjusterar', 'varning',
+                        'profit warning', 'lowers', 'lower', 'cuts', 'reduces', 'downgrade', 
+                        'warning', 'miss', 'disappoints', 'weak', 'below expectations'
+                    ]
+                else:
+                    warning_keywords = [
+                        'profit warning', 'lowers guidance', 'lower guidance', 'cuts guidance',
+                        'downgrade', 'warning', 'miss', 'misses', 'disappoints', 'weak results',
+                        'below expectations', 'reduces'
+                    ]
+                
+                yf_hit = check_yf_news(ticker, warning_keywords, days_back=30)
+                if yf_hit:
+                    news_hits.append(f"⚠️ Vinstvarning")
+                else:
+                    continue  # Vinstvarning krävdes men hittades inte
+            
+            if check_rapport:
+                earnings_info = check_earnings_date(ticker, days_range=30)
+                if earnings_info:
+                    news_hits.append(f"📊 {earnings_info}")
+                else:
+                    report_keywords = []
+                    if is_swedish:
+                        report_keywords = ['kvartalsrapport', 'delårsrapport', 'Q1', 'Q2', 'Q3', 'Q4', 'earnings']
+                    else:
+                        report_keywords = ['earnings', 'quarterly results', 'reports', 'Q1', 'Q2', 'Q3', 'Q4']
+                    
+                    yf_hit = check_yf_news(ticker, report_keywords, days_back=30)
+                    if yf_hit:
+                        news_hits.append(f"📊 Rapport")
+            
+            if check_insider:
+                insider_keywords = []
+                if is_swedish:
+                    insider_keywords = ['insider', 'köper', 'säljer', 'styrelse köp', 'vd köp']
+                else:
+                    insider_keywords = ['insider', 'insider buying', 'CEO bought', 'director bought']
+                
+                yf_hit = check_yf_news(ticker, insider_keywords, days_back=30)
+                if yf_hit:
+                    news_hits.append(f"👤 Insider")
+            
+            if check_ny_vd:
+                vd_keywords = []
+                if is_swedish:
+                    vd_keywords = ['ny vd', 'vd avgår', 'utsedd vd', 'ny ceo']
+                else:
+                    vd_keywords = ['new ceo', 'ceo appointed', 'ceo resigns', 'management change']
+                
+                yf_hit = check_yf_news(ticker, vd_keywords, days_back=60)
+                if yf_hit:
+                    news_hits.append(f"🎯 Ledning")
+            
             # Avgör valuta och marknad
             market = get_market_from_ticker(ticker)
             if market == 'Sverige 🇸🇪':
@@ -134,6 +273,8 @@ def process_batch_results(data, tickers_in_batch, price_range, pe_range, pb_rang
             else:
                 currency = "USD"
             
+            news_text = " | ".join(news_hits) if news_hits else "Ingen händelse"
+            
             # Lägg till resultat
             results.append({
                 "Ticker": ticker,
@@ -141,7 +282,8 @@ def process_batch_results(data, tickers_in_batch, price_range, pe_range, pb_rang
                 f"Pris ({currency})": round(price, 2),
                 "P/E": round(pe, 2) if pe else "N/A",
                 "P/B": round(pb, 2) if pb else "N/A",
-                "Trend (Dagar)": streak
+                "Trend (Dagar)": streak,
+                "Händelser": news_text
             })
             
         except Exception as e:
@@ -223,6 +365,25 @@ def main():
     else:
         pb_range = None
     
+    # --- HÄNDELSER ---
+    st.sidebar.subheader("📰 Händelser (Press Releases)")
+    check_vinstvarning = st.sidebar.checkbox(
+        "⚠️ Vinstvarning / Profit Warning", 
+        help="Söker i Yahoo Finance press releases efter vinstvarningar"
+    )
+    check_rapport = st.sidebar.checkbox(
+        "📊 Rapport släppt/på väg (30 dagar)",
+        help="Söker efter kvartalsrapporter i Yahoo Finance"
+    )
+    check_insider = st.sidebar.checkbox(
+        "👤 Insidertransaktioner",
+        help="Söker efter insiderköp och insiderförsäljning"
+    )
+    check_ny_vd = st.sidebar.checkbox(
+        "🎯 Ny VD/ledning",
+        help="Söker efter VD-byten och ledningsförändringar"
+    )
+    
     # --- TEKNISK TREND ---
     st.sidebar.subheader("📈 Teknisk Trend")
     streak_filter = st.sidebar.slider("Trend (Dagar upp/ner)", -15, 15, (-15, 15))
@@ -286,7 +447,11 @@ def main():
                     pb_range,
                     use_pe_filter,
                     use_pb_filter,
-                    streak_filter
+                    streak_filter,
+                    check_vinstvarning,
+                    check_rapport,
+                    check_insider,
+                    check_ny_vd
                 )
                 all_results.extend(batch_results)
                 

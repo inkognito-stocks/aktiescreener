@@ -595,6 +595,15 @@ def get_market_from_ticker(ticker):
     else:
         return 'USA 🇺🇸'
 
+def get_yahoo_finance_url(ticker):
+    """
+    Genererar Yahoo Finance URL för en ticker.
+    """
+    # Yahoo Finance använder samma ticker-format som yfinance
+    # T.ex. AAPL, AAK.ST, RY.TO
+    encoded_ticker = ticker.replace('.', '-')  # Yahoo Finance använder - istället för . i URL:en
+    return f"https://finance.yahoo.com/quote/{ticker}"
+
 def check_yf_news(ticker_symbol, keywords_list, days_back=30):
     """
     Söker i Yahoo Finance press releases och nyheter.
@@ -1052,10 +1061,14 @@ def process_batch_results(data, tickers_in_batch, price_range, streak_filter,
                 volume_spike_data, gap_data, breakout_data
             )
             
+            # Generera Yahoo Finance länk
+            yahoo_url = get_yahoo_finance_url(ticker)
+            
             # Bygg resultat-dictionary
             result_dict = {
                 "Momentum": momentum_score,  # Lägg först för sortering
-                "Ticker": ticker,
+                "Ticker": ticker,  # Vi formaterar detta senare som länk
+                "Ticker_URL": yahoo_url,  # Spara URL separat för formatering
                 "Marknad": market,
                 f"Pris ({currency})": round(price, 2),
                 "Trend (Dagar)": streak,
@@ -1545,6 +1558,9 @@ def main():
             ordered_cols.extend([c for c in existing_cols if c not in ordered_cols])
             df_results = df_results[ordered_cols]
             
+            # Förbered Yahoo Finance länkar för ticker-kolumnen
+            # Vi behåller Ticker_URL för att använda med column_config
+            
             # Färgkoda kolumner med stängning/utveckling
             def color_cells(val):
                 if pd.isna(val) or val == "N/A":
@@ -1578,6 +1594,40 @@ def main():
                         return 'background-color: #f8d7da; color: #721c24;'  # Rött för lågt
                 return ''
             
+            # Lägg till klickbara länkar till Yahoo Finance
+            column_config = {}
+            if 'Ticker' in df_results.columns and 'Ticker_URL' in df_results.columns:
+                try:
+                    # Försök använda Streamlit's LinkColumn (Streamlit >= 1.23.0)
+                    df_results['🔗'] = df_results['Ticker_URL']
+                    column_config['🔗'] = st.column_config.LinkColumn(
+                        "Yahoo Finance",
+                        help="Klicka för att öppna på Yahoo Finance",
+                        display_text="Öppna"
+                    )
+                    # Ta bort Ticker_URL från visningen
+                    df_results = df_results.drop(columns=['Ticker_URL'])
+                    # Lägg till länk-kolumnen efter Ticker
+                    if 'Ticker' in ordered_cols:
+                        ticker_idx = ordered_cols.index('Ticker')
+                        ordered_cols.insert(ticker_idx + 1, '🔗')
+                    else:
+                        ordered_cols.insert(0, '🔗')
+                    df_results = df_results[ordered_cols]
+                except AttributeError:
+                    # Fallback för äldre Streamlit-versioner: Lägg till länkar i en separat kolumn
+                    df_results['🔗 Länk'] = df_results.apply(
+                        lambda row: f"[Öppna]({row['Ticker_URL']})",
+                        axis=1
+                    )
+                    df_results = df_results.drop(columns=['Ticker_URL'])
+                    if 'Ticker' in ordered_cols:
+                        ticker_idx = ordered_cols.index('Ticker')
+                        ordered_cols.insert(ticker_idx + 1, '🔗 Länk')
+                    else:
+                        ordered_cols.insert(0, '🔗 Länk')
+                    df_results = df_results[ordered_cols]
+            
             # Applicera styling på relevanta kolumner
             color_columns = [col for col in df_results.columns if 'stängning' in col or 'Utveckling' in col or 'Förändring' in col or col == 'Momentum']
             if color_columns:
@@ -1587,9 +1637,16 @@ def main():
                 ).format({
                     'Momentum': '{:.0f}'  # Visa momentum som heltal
                 }, na_rep='N/A')
-                st.dataframe(styled_df, use_container_width=True, height=600)
+                # Använd column_config om det finns länkar
+                if column_config:
+                    st.dataframe(styled_df, use_container_width=True, height=600, column_config=column_config)
+                else:
+                    st.dataframe(styled_df, use_container_width=True, height=600)
             else:
-                st.dataframe(df_results, use_container_width=True, height=600)
+                if column_config:
+                    st.dataframe(df_results, use_container_width=True, height=600, column_config=column_config)
+                else:
+                    st.dataframe(df_results, use_container_width=True, height=600)
             
             st.markdown("---")
             csv = df_results.to_csv(index=False).encode('utf-8')

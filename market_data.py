@@ -1,5 +1,3 @@
-market_data.py
-
 # --- SVERIGE LARGE CAP (Komplett lista) ---
 SE_LARGE_CAP = [
     "AAK.ST", "ABB.ST", "ADD-B.ST", "ALFA.ST", "ALIF-B.ST", "ASSA-B.ST",

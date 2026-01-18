@@ -45,11 +45,12 @@ st.set_page_config(page_title="AktieScreener Global", layout="wide")
 def download_batch_data(tickers_batch, batch_num, total_batches):
     """
     Laddar ner data för en batch av tickers samtidigt.
+    Hämtar 5 års historik för att stödja alla utvecklingsperioder.
     """
     try:
         data = yf.download(
             tickers_batch,
-            period="1mo",
+            period="5y",  # 5 års historik för att stödja alla perioder
             group_by='ticker',
             threads=True,
             progress=False
@@ -328,7 +329,7 @@ def check_earnings_date(ticker_symbol, days_range=30):
 def process_batch_results(data, tickers_in_batch, price_range, streak_filter, 
                           check_vinstvarning, check_rapport, check_insider, check_ny_vd, 
                           use_price_change, price_change_period, price_change_range, 
-                          volume_threshold):
+                          volume_threshold, development_period):
     """
     Processar resultatet från en batch-download
     """
@@ -382,6 +383,39 @@ def process_batch_results(data, tickers_in_batch, price_range, streak_filter,
                     # Relativ volym (1.0 = normal, 1.5 = 50% mer än snittet, 0.5 = 50% lägre än snittet)
                     if avg_volume > 0:
                         relative_volume = recent_volume / avg_volume
+            
+            # Beräkna dagens stängning (positivt/negativt)
+            daily_change_pct = None
+            daily_change_direction = None
+            if len(closes) >= 2:
+                today_price = float(closes.iloc[-1])
+                yesterday_price = float(closes.iloc[-2])
+                daily_change_pct = ((today_price - yesterday_price) / yesterday_price) * 100
+                if daily_change_pct > 0:
+                    daily_change_direction = "positivt"
+                elif daily_change_pct < 0:
+                    daily_change_direction = "negativt"
+                else:
+                    daily_change_direction = "oförändrat"
+            
+            # Beräkna utveckling för vald period
+            development_pct = None
+            development_days = {
+                "1 dag": 1,
+                "1 vecka": 5,
+                "1 månad": 20,
+                "3 månader": 60,
+                "6 månader": 120,
+                "12 månader": 250,
+                "3 år": 750,
+                "5 år": 1250
+            }
+            days_back = development_days.get(development_period, 1)
+            
+            if len(closes) > days_back:
+                old_price = float(closes.iloc[-days_back-1])
+                current_price = float(closes.iloc[-1])
+                development_pct = ((current_price - old_price) / old_price) * 100
             
             # Prisförändring-filter
             price_change_pct = None
@@ -501,6 +535,28 @@ def process_batch_results(data, tickers_in_batch, price_range, streak_filter,
                 "Trend (Dagar)": streak,
             }
             
+            # Lägg till dagens stängning (positivt/negativt)
+            if daily_change_direction and daily_change_pct is not None:
+                if daily_change_direction == "positivt":
+                    result_dict["Dagens stängning"] = f"+{daily_change_pct:.2f}%"
+                elif daily_change_direction == "negativt":
+                    result_dict["Dagens stängning"] = f"{daily_change_pct:.2f}%"
+                else:
+                    result_dict["Dagens stängning"] = f"{daily_change_pct:.2f}%"
+            else:
+                result_dict["Dagens stängning"] = "N/A"
+            
+            # Lägg till utveckling för vald period
+            if development_pct is not None:
+                if development_pct > 0:
+                    result_dict[f"Utveckling ({development_period})"] = f"+{development_pct:.2f}%"
+                elif development_pct < 0:
+                    result_dict[f"Utveckling ({development_period})"] = f"{development_pct:.2f}%"
+                else:
+                    result_dict[f"Utveckling ({development_period})"] = f"{development_pct:.2f}%"
+            else:
+                result_dict[f"Utveckling ({development_period})"] = "N/A"
+            
             # Lägg till relativ volym alltid (om tillgängligt)
             if relative_volume is not None:
                 # Formatera som 1.5 för 50% mer, 0.5 för 50% lägre
@@ -595,6 +651,15 @@ def main():
     st.sidebar.subheader("📈 Teknisk Trend")
     streak_filter = st.sidebar.slider("Trend (Dagar upp/ner)", -15, 15, (-15, 15))
     
+    # Utvecklingsperiod (alltid synlig)
+    st.sidebar.markdown("---")
+    development_period = st.sidebar.selectbox(
+        "📊 Utvecklingsperiod",
+        ["1 dag", "1 vecka", "1 månad", "3 månader", "6 månader", "12 månader", "3 år", "5 år"],
+        index=0,
+        help="Välj tidsperiod för utvecklingskolumnen i resultaten"
+    )
+    
     # Prisförändring filter
     st.sidebar.markdown("---")
     use_price_change = st.sidebar.checkbox("Använd prisförändring-filter")
@@ -686,7 +751,7 @@ def main():
                     batch_data, batch, price_range, streak_filter,
                     check_vinstvarning, check_rapport, check_insider, check_ny_vd,
                     use_price_change, price_change_period, price_change_range,
-                    volume_threshold
+                    volume_threshold, development_period
                 )
                 all_results.extend(batch_results)
                 
@@ -703,7 +768,40 @@ def main():
             st.success(f"✅ Klar! Hittade {len(all_results)} aktier på {elapsed_time:.1f}s")
             
             df_results = pd.DataFrame(display_results)
-            st.dataframe(df_results, use_container_width=True, height=600)
+            
+            # Färgkoda kolumner med stängning/utveckling
+            def color_cells(val):
+                if pd.isna(val) or val == "N/A":
+                    return ''
+                if isinstance(val, str) and '%' in val:
+                    try:
+                        # Extrahera numeriskt värde
+                        num_str = val.replace('%', '').replace('+', '').strip()
+                        num_val = float(num_str)
+                        
+                        # Grönt för positiva värden
+                        if num_val > 0:
+                            return 'background-color: #d4edda; color: #155724;'  # Grönt
+                        # Rött för negativa värden
+                        elif num_val < 0:
+                            return 'background-color: #f8d7da; color: #721c24;'  # Rött
+                        # Grått för oförändrat
+                        else:
+                            return 'background-color: #e2e3e5; color: #383d41;'  # Grått
+                    except:
+                        return ''
+                return ''
+            
+            # Applicera styling på relevanta kolumner
+            color_columns = [col for col in df_results.columns if 'stängning' in col or 'Utveckling' in col or 'Förändring' in col]
+            if color_columns:
+                styled_df = df_results.style.applymap(
+                    color_cells,
+                    subset=color_columns
+                )
+                st.dataframe(styled_df, use_container_width=True, height=600)
+            else:
+                st.dataframe(df_results, use_container_width=True, height=600)
             
             csv = df_results.to_csv(index=False).encode('utf-8')
             st.download_button("📥 Ladda ner CSV", csv, "resultat.csv", "text/csv")

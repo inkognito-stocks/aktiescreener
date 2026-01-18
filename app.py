@@ -623,11 +623,51 @@ def main():
     st.sidebar.markdown("---")
     
     # --- PRIS & FILTER ---
+    # Initiera session_state för prisintervall
+    if 'price_min' not in st.session_state:
+        st.session_state.price_min = 0
+    if 'price_max' not in st.session_state:
+        st.session_state.price_max = 2000
+    
+    # Skapa två kolumner för min och max input
+    col_price_min, col_price_max = st.sidebar.columns(2)
+    
+    with col_price_min:
+        price_min_input = st.number_input(
+            "Min pris",
+            min_value=0,
+            max_value=2000,
+            value=st.session_state.price_min,
+            step=10,
+            key="price_min_input",
+            help="Skriv in minsta pris (t.ex. 10 för 10 kr)"
+        )
+        st.session_state.price_min = price_min_input
+    
+    with col_price_max:
+        price_max_input = st.number_input(
+            "Max pris",
+            min_value=0,
+            max_value=2000,
+            value=st.session_state.price_max,
+            step=10,
+            key="price_max_input",
+            help="Skriv in största pris (t.ex. 100 för 100 kr)"
+        )
+        st.session_state.price_max = price_max_input
+    
     price_range = st.sidebar.slider(
         "Prisintervall (Nominellt)", 
-        0, 2000, (0, 2000), 10,
-        help="Filtrera aktier baserat på deras nuvarande pris. Dra slidern för att välja min- och maxpris. Exempel: 10-100 kr för att hitta aktier mellan 10 och 100 kr."
+        0, 2000, 
+        (st.session_state.price_min, st.session_state.price_max), 
+        10,
+        key="price_range_slider",
+        help="Dra slidern eller använd textfälten ovanför för att ange prisintervall. Exempel: 10-100 kr för att hitta aktier mellan 10 och 100 kr."
     )
+    
+    # Uppdatera session_state när slidern ändras
+    st.session_state.price_min = price_range[0]
+    st.session_state.price_max = price_range[1]
     
     st.sidebar.markdown("---")
     
@@ -666,11 +706,51 @@ def main():
         )
     
     st.sidebar.subheader("📈 Teknisk Trend")
+    
+    # Initiera session_state för trend
+    if 'trend_min' not in st.session_state:
+        st.session_state.trend_min = -15
+    if 'trend_max' not in st.session_state:
+        st.session_state.trend_max = 15
+    
+    # Skapa två kolumner för min och max input
+    col_trend_min, col_trend_max = st.sidebar.columns(2)
+    
+    with col_trend_min:
+        trend_min_input = st.number_input(
+            "Min (dagar)",
+            min_value=-15,
+            max_value=15,
+            value=st.session_state.trend_min,
+            step=1,
+            key="trend_min_input",
+            help="Skriv in minsta antal dagar (t.ex. -5 för -5 dagar)"
+        )
+        st.session_state.trend_min = int(trend_min_input)
+    
+    with col_trend_max:
+        trend_max_input = st.number_input(
+            "Max (dagar)",
+            min_value=-15,
+            max_value=15,
+            value=st.session_state.trend_max,
+            step=1,
+            key="trend_max_input",
+            help="Skriv in största antal dagar (t.ex. +10 för +10 dagar)"
+        )
+        st.session_state.trend_max = int(trend_max_input)
+    
     streak_filter = st.sidebar.slider(
         "Trend (Dagar upp/ner)", 
-        -15, 15, (-15, 15),
-        help="Filtrera aktier baserat på hur många dagar i rad de har stängt uppåt (+) eller nedåt (-). Exempel: +3 till +10 = aktier som stängt uppåt 3-10 dagar i rad. -5 till -1 = aktier som stängt nedåt 1-5 dagar i rad."
+        -15, 15, 
+        (st.session_state.trend_min, st.session_state.trend_max),
+        key="trend_slider",
+        help="Dra slidern eller använd textfälten ovanför. Exempel: +3 till +10 = aktier som stängt uppåt 3-10 dagar i rad. -5 till -1 = aktier som stängt nedåt 1-5 dagar i rad."
     )
+    
+    # Uppdatera session_state när slidern ändras
+    st.session_state.trend_min = streak_filter[0]
+    st.session_state.trend_max = streak_filter[1]
     
     # Utvecklingsperiod (alltid synlig)
     st.sidebar.markdown("---")
@@ -695,12 +775,52 @@ def main():
             help="Hur långt bakåt ska prisförändringen beräknas? '1 dag' = jämför med igår, '1 vecka' = jämför med för 5 handelsdagar sedan, '1 månad' = jämför med för ~20 handelsdagar sedan."
         )
         
+        # Initiera session_state för prisförändring om det inte finns
+        if 'price_change_min' not in st.session_state:
+            st.session_state.price_change_min = 0.0
+        if 'price_change_max' not in st.session_state:
+            st.session_state.price_change_max = 20.0
+        
+        # Skapa två kolumner för min och max input
+        col_min, col_max = st.sidebar.columns(2)
+        
+        with col_min:
+            min_change_input = st.number_input(
+                "Min (%)",
+                min_value=-50.0,
+                max_value=100.0,
+                value=st.session_state.price_change_min,
+                step=0.5,
+                key="price_change_min_input",
+                help="Skriv in eller ändra minsta prisförändring (t.ex. -10 för -10%)"
+            )
+            st.session_state.price_change_min = min_change_input
+        
+        with col_max:
+            max_change_input = st.number_input(
+                "Max (%)",
+                min_value=-50.0,
+                max_value=100.0,
+                value=st.session_state.price_change_max,
+                step=0.5,
+                key="price_change_max_input",
+                help="Skriv in eller ändra största prisförändring (t.ex. +20 för +20%)"
+            )
+            st.session_state.price_change_max = max_change_input
+        
+        # Slider som synkroniseras med textfälten
         price_change_range = st.sidebar.slider(
             "Prisförändring (%)",
-            -50.0, 100.0, (0.0, 20.0),
+            -50.0, 100.0, 
+            (st.session_state.price_change_min, st.session_state.price_change_max),
             step=0.5,
-            help="Filtrera bolag som gått upp/ner inom detta intervall. Exempel: 5-15% = aktier som gått upp 5-15%, -10% till -5% = aktier som fallit 5-10% (potentiella köptillfällen)."
+            key="price_change_slider",
+            help="Dra slidern eller använd textfälten ovanför för att ange intervall. Exempel: 5-15% = aktier som gått upp 5-15%, -10% till -5% = aktier som fallit 5-10%."
         )
+        
+        # Uppdatera session_state när slidern ändras
+        st.session_state.price_change_min = price_change_range[0]
+        st.session_state.price_change_max = price_change_range[1]
         
         # Volymfilter (valfritt)
         use_volume_filter = st.sidebar.checkbox(
@@ -709,12 +829,32 @@ def main():
         )
         
         if use_volume_filter:
+            # Initiera session_state för volym om det inte finns
+            if 'volume_threshold_value' not in st.session_state:
+                st.session_state.volume_threshold_value = 100
+            
+            volume_threshold_input = st.sidebar.number_input(
+                "Min. relativ volym (%)",
+                min_value=0,
+                max_value=500,
+                value=st.session_state.volume_threshold_value,
+                step=10,
+                key="volume_threshold_input",
+                help="Skriv in eller ändra minimum relativ volym (t.ex. 150 för 150%)"
+            )
+            st.session_state.volume_threshold_value = volume_threshold_input
+            
             volume_threshold = st.sidebar.slider(
                 "Min. relativ volym (%)",
-                0, 500, 100,
+                0, 500, 
+                st.session_state.volume_threshold_value,
                 step=10,
-                help="Sätt minimum relativ volym. 100% = normal volym, 150% = 50% mer än normalt, 200% = dubbel volym. Högre värden = bara aktier med ovanligt hög omsättning (breakouts, nyheter)."
+                key="volume_threshold_slider",
+                help="Dra slidern eller använd textfältet ovanför. 100% = normal volym, 150% = 50% mer än normalt, 200% = dubbel volym. Högre värden = bara aktier med ovanligt hög omsättning (breakouts, nyheter)."
             )
+            
+            # Uppdatera session_state när slidern ändras
+            st.session_state.volume_threshold_value = volume_threshold
         else:
             volume_threshold = None
     else:

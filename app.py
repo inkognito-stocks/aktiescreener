@@ -268,6 +268,247 @@ def calculate_streak(prices):
             break
     return streak
 
+def detect_volume_spike(volumes, days_lookback=252):
+    """
+    Detekterar volymspikar och returnerar metadata.
+    Returns: dict med 'spike_ratio', 'is_record', 'spike_category'
+    """
+    if len(volumes) < 30:
+        return None
+    
+    recent_volume = float(volumes.iloc[-1])
+    
+    # Genomsnittlig volym över 90 dagar
+    if len(volumes) > 90:
+        avg_volume_90d = float(volumes.iloc[-91:-1].mean())
+    else:
+        avg_volume_90d = float(volumes.iloc[:-1].mean())
+    
+    # 52-veckors högsta volym (252 handelsdagar)
+    lookback_days = min(days_lookback, len(volumes) - 1)
+    if lookback_days > 0:
+        max_volume_52w = float(volumes.iloc[-lookback_days-1:-1].max())
+    else:
+        max_volume_52w = avg_volume_90d
+    
+    if avg_volume_90d == 0:
+        return None
+    
+    spike_ratio = recent_volume / avg_volume_90d
+    is_record = recent_volume >= max_volume_52w
+    
+    # Kategorisera spiken
+    if spike_ratio >= 10:
+        spike_category = "EXTREMT"
+    elif spike_ratio >= 5:
+        spike_category = "MYCKET HÖG"
+    elif spike_ratio >= 3:
+        spike_category = "HÖG"
+    elif spike_ratio >= 2:
+        spike_category = "MÅTTLIG"
+    else:
+        spike_category = "NORMAL"
+    
+    return {
+        'spike_ratio': spike_ratio,
+        'is_record': is_record,
+        'spike_category': spike_category,
+        'recent_volume': recent_volume,
+        'avg_volume_90d': avg_volume_90d,
+        'max_volume_52w': max_volume_52w
+    }
+
+def detect_gap(prices):
+    """
+    Detekterar gap i priset (gap upp eller gap ner).
+    Returns: dict med 'gap_pct', 'gap_type', 'gap_size'
+    """
+    if len(prices) < 2:
+        return None
+    
+    today_close = float(prices.iloc[-1])
+    yesterday_close = float(prices.iloc[-2])
+    
+    # För gap behöver vi öppningspriset, men vi har bara Close
+    # Vi approximerar gap genom att jämföra dagens close med gårdagens close
+    # Ett riktigt gap skulle kräva Open data, men vi kan identifiera stora rörelser
+    
+    # Om vi har High/Low data kan vi bättre uppskatta gap
+    # För nu, låt oss använda close-to-close som proxy
+    
+    # Ett gap upp: dagens lägsta är högre än gårdagens högsta
+    # Ett gap ner: dagens högsta är lägre än gårdagens lägsta
+    
+    # För enkelhet, låt oss använda close-to-close för stora rörelser
+    price_change_pct = ((today_close - yesterday_close) / yesterday_close) * 100
+    
+    # Ett gap är vanligtvis >2% rörelse
+    if abs(price_change_pct) >= 2:
+        if price_change_pct > 0:
+            gap_type = "GAP UPP"
+        else:
+            gap_type = "GAP NER"
+        
+        return {
+            'gap_pct': abs(price_change_pct),
+            'gap_type': gap_type,
+            'gap_size': 'STOR' if abs(price_change_pct) >= 5 else 'MÅTTLIG'
+        }
+    
+    return None
+
+def detect_breakout(prices, volumes=None):
+    """
+    Detekterar breakout genom viktiga prisnivåer.
+    Returns: dict med 'breakout_type', 'breakout_level', 'strength'
+    """
+    if len(prices) < 20:
+        return None
+    
+    current_price = float(prices.iloc[-1])
+    
+    # 52-veckors hög/låg (252 handelsdagar)
+    lookback_days = min(252, len(prices) - 1)
+    if lookback_days > 0:
+        high_52w = float(prices.iloc[-lookback_days-1:-1].max())
+        low_52w = float(prices.iloc[-lookback_days-1:-1].min())
+    else:
+        high_52w = float(prices.max())
+        low_52w = float(prices.min())
+    
+    # 20-dagars moving average
+    if len(prices) >= 20:
+        ma_20 = float(prices.iloc[-20:].mean())
+    else:
+        ma_20 = current_price
+    
+    # 50-dagars moving average
+    if len(prices) >= 50:
+        ma_50 = float(prices.iloc[-50:].mean())
+    else:
+        ma_50 = current_price
+    
+    breakouts = []
+    
+    # Breakout till 52-veckors hög
+    if current_price >= high_52w * 0.98:  # 98% av högsta = nära breakout
+        breakouts.append({
+            'breakout_type': '52-VECKORS HÖG',
+            'breakout_level': high_52w,
+            'strength': 'MYCKET STARK' if current_price >= high_52w else 'STARK'
+        })
+    
+    # Breakout över MA20
+    if current_price > ma_20 and len(prices) >= 2:
+        prev_price = float(prices.iloc[-2])
+        if prev_price <= ma_20:  # Korsade precis över
+            breakouts.append({
+                'breakout_type': 'MA20',
+                'breakout_level': ma_20,
+                'strength': 'MÅTTLIG'
+            })
+    
+    # Breakout över MA50
+    if current_price > ma_50 and len(prices) >= 2:
+        prev_price = float(prices.iloc[-2])
+        if prev_price <= ma_50:  # Korsade precis över
+            breakouts.append({
+                'breakout_type': 'MA50',
+                'breakout_level': ma_50,
+                'strength': 'STARK'
+            })
+    
+    if breakouts:
+        # Returnera den starkaste breakouten
+        return max(breakouts, key=lambda x: 3 if 'MYCKET STARK' in x['strength'] else (2 if 'STARK' in x['strength'] else 1))
+    
+    return None
+
+def calculate_momentum_score(relative_volume, daily_change_pct, streak, has_news, 
+                            volume_spike_data=None, gap_data=None, breakout_data=None):
+    """
+    Beräknar ett momentum-score (0-100) baserat på flera faktorer.
+    Högre score = starkare momentum.
+    """
+    score = 0.0
+    
+    # 1. Relativ volym (30% vikt)
+    if relative_volume is not None:
+        if relative_volume >= 5:
+            vol_score = 30
+        elif relative_volume >= 3:
+            vol_score = 25
+        elif relative_volume >= 2:
+            vol_score = 20
+        elif relative_volume >= 1.5:
+            vol_score = 15
+        elif relative_volume >= 1.2:
+            vol_score = 10
+        else:
+            vol_score = 5
+        score += vol_score
+    
+    # 2. Prisförändring (25% vikt)
+    if daily_change_pct is not None:
+        if daily_change_pct >= 10:
+            price_score = 25
+        elif daily_change_pct >= 5:
+            price_score = 20
+        elif daily_change_pct >= 3:
+            price_score = 15
+        elif daily_change_pct >= 1:
+            price_score = 10
+        elif daily_change_pct >= 0:
+            price_score = 5
+        else:
+            price_score = 0
+        score += price_score
+    
+    # 3. Trend-streak (15% vikt)
+    if streak is not None:
+        if streak >= 7:
+            streak_score = 15
+        elif streak >= 5:
+            streak_score = 12
+        elif streak >= 3:
+            streak_score = 10
+        elif streak >= 1:
+            streak_score = 7
+        else:
+            streak_score = 3
+        score += streak_score
+    
+    # 4. Nyhetsaktivitet (10% vikt)
+    if has_news:
+        score += 10
+    
+    # 5. Volymspik bonus (10% vikt)
+    if volume_spike_data:
+        if volume_spike_data.get('is_record'):
+            score += 10
+        elif volume_spike_data.get('spike_ratio', 0) >= 5:
+            score += 8
+        elif volume_spike_data.get('spike_ratio', 0) >= 3:
+            score += 5
+    
+    # 6. Gap bonus (5% vikt)
+    if gap_data:
+        if gap_data.get('gap_size') == 'STOR':
+            score += 5
+        else:
+            score += 3
+    
+    # 7. Breakout bonus (5% vikt)
+    if breakout_data:
+        if 'MYCKET STARK' in breakout_data.get('strength', ''):
+            score += 5
+        elif 'STARK' in breakout_data.get('strength', ''):
+            score += 3
+        else:
+            score += 2
+    
+    return min(100, max(0, score))  # Begränsa till 0-100
+
 def get_market_from_ticker(ticker):
     """Identifierar marknad baserat på ticker-suffix"""
     if ticker.endswith('.ST'):
@@ -555,6 +796,7 @@ def process_batch_results(data, tickers_in_batch, price_range, streak_filter,
             
             # Beräkna volym alltid (för att visa relativ volym)
             relative_volume = None
+            volume_spike_data = None
             if 'Volume' in ticker_data.columns:
                 volumes = ticker_data['Volume'].dropna()
                 
@@ -568,6 +810,9 @@ def process_batch_results(data, tickers_in_batch, price_range, streak_filter,
                     # Relativ volym (1.0 = normal, 1.5 = 50% mer än snittet, 0.5 = 50% lägre än snittet)
                     if avg_volume > 0:
                         relative_volume = recent_volume / avg_volume
+                    
+                    # Detektera volymspikar
+                    volume_spike_data = detect_volume_spike(volumes)
             
             # Beräkna dagens stängning (positivt/negativt)
             daily_change_pct = None
@@ -582,6 +827,17 @@ def process_batch_results(data, tickers_in_batch, price_range, streak_filter,
                     daily_change_direction = "negativt"
                 else:
                     daily_change_direction = "oförändrat"
+            
+            # Detektera gap
+            gap_data = detect_gap(closes)
+            
+            # Detektera breakout
+            breakout_data = None
+            if 'Volume' in ticker_data.columns:
+                volumes = ticker_data['Volume'].dropna()
+                breakout_data = detect_breakout(closes, volumes)
+            else:
+                breakout_data = detect_breakout(closes)
             
             # Beräkna utveckling för vald period
             development_pct = None
@@ -711,9 +967,17 @@ def process_batch_results(data, tickers_in_batch, price_range, streak_filter,
             currency = "SEK" if market == 'Sverige 🇸🇪' else ("CAD" if market == 'Kanada 🇨🇦' else "USD")
             
             news_text = " | ".join(news_hits) if news_hits else "Ingen händelse"
+            has_news = len(news_hits) > 0
+            
+            # Beräkna momentum-score
+            momentum_score = calculate_momentum_score(
+                relative_volume, daily_change_pct, streak, has_news,
+                volume_spike_data, gap_data, breakout_data
+            )
             
             # Bygg resultat-dictionary
             result_dict = {
+                "Momentum": momentum_score,  # Lägg först för sortering
                 "Ticker": ticker,
                 "Marknad": market,
                 f"Pris ({currency})": round(price, 2),
@@ -748,6 +1012,30 @@ def process_batch_results(data, tickers_in_batch, price_range, streak_filter,
                 result_dict["Relativ Volym"] = f"{relative_volume:.2f}"
             else:
                 result_dict["Relativ Volym"] = "N/A"
+            
+            # Lägg till volymspik-info
+            if volume_spike_data:
+                spike_emoji = "🔥" if volume_spike_data.get('is_record') else "📈"
+                spike_text = f"{spike_emoji} {volume_spike_data.get('spike_category', 'NORMAL')}"
+                if volume_spike_data.get('is_record'):
+                    spike_text += " (REKORD)"
+                result_dict["Volymspik"] = spike_text
+            else:
+                result_dict["Volymspik"] = "N/A"
+            
+            # Lägg till gap-info
+            if gap_data:
+                gap_emoji = "🚀" if gap_data.get('gap_type') == "GAP UPP" else "📉"
+                result_dict["Gap"] = f"{gap_emoji} {gap_data.get('gap_type', '')} {gap_data.get('gap_pct', 0):.1f}%"
+            else:
+                result_dict["Gap"] = "Ingen"
+            
+            # Lägg till breakout-info
+            if breakout_data:
+                breakout_emoji = "💥"
+                result_dict["Breakout"] = f"{breakout_emoji} {breakout_data.get('breakout_type', '')}"
+            else:
+                result_dict["Breakout"] = "Ingen"
             
             # Lägg till prisförändring om filtret är aktivt
             if use_price_change and price_change_pct is not None:
@@ -1122,10 +1410,19 @@ def main():
         elapsed_time = time.time() - start_time
         
         if len(all_results) > 0:
-            display_results = all_results[:100]
-            st.success(f"✅ Klar! Hittade {len(all_results)} aktier på {elapsed_time:.1f}s")
+            # Sortera efter momentum-score (högst först)
+            all_results_sorted = sorted(all_results, key=lambda x: x.get('Momentum', 0), reverse=True)
+            display_results = all_results_sorted[:100]
+            st.success(f"✅ Klar! Hittade {len(all_results)} aktier på {elapsed_time:.1f}s (sorterade efter momentum)")
             
             df_results = pd.DataFrame(display_results)
+            
+            # Flytta Momentum-kolumnen till andra positionen (efter Ticker)
+            if 'Momentum' in df_results.columns:
+                cols = list(df_results.columns)
+                cols.remove('Momentum')
+                cols.insert(1, 'Momentum')  # Efter Ticker
+                df_results = df_results[cols]
             
             # Färgkoda kolumner med stängning/utveckling
             def color_cells(val):
@@ -1148,10 +1445,20 @@ def main():
                             return 'background-color: #e2e3e5; color: #383d41;'  # Grått
                     except:
                         return ''
+                # Färgkoda Momentum-score
+                if isinstance(val, (int, float)):
+                    if val >= 70:
+                        return 'background-color: #d4edda; color: #155724; font-weight: bold;'  # Mörkgrönt för högt momentum
+                    elif val >= 50:
+                        return 'background-color: #c3e6cb; color: #155724;'  # Ljusgrönt för medelhögt
+                    elif val >= 30:
+                        return 'background-color: #fff3cd; color: #856404;'  # Gul för medel
+                    else:
+                        return 'background-color: #f8d7da; color: #721c24;'  # Rött för lågt
                 return ''
             
             # Applicera styling på relevanta kolumner
-            color_columns = [col for col in df_results.columns if 'stängning' in col or 'Utveckling' in col or 'Förändring' in col]
+            color_columns = [col for col in df_results.columns if 'stängning' in col or 'Utveckling' in col or 'Förändring' in col or col == 'Momentum']
             if color_columns:
                 styled_df = df_results.style.applymap(
                     color_cells,

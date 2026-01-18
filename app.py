@@ -142,7 +142,7 @@ def check_yf_news(ticker_symbol, keywords_list, days_back=30):
     except Exception as e:
         return None
 
-@st.cache_data(ttl=1800)  # Cache i 30 minuter
+@st.cache_data(ttl=7200)  # Cache i 2 timmar (snabbare, nyheter ändras inte så ofta)
 def check_placera_news(ticker_symbol, keywords_list, days_back=30):
     """
     Söker på Placera.se med enkel sökstrategi.
@@ -532,11 +532,29 @@ def main():
     use_pb_filter = st.sidebar.checkbox("Använd P/B-filter")
     pb_range = st.sidebar.slider("P/B-tal", 0.0, 10.0, (0.0, 10.0)) if use_pb_filter else None
     
+    st.sidebar.markdown("---")
+    
+    # Snabb sökning-läge
+    snabb_sokning = st.sidebar.checkbox(
+        "⚡ Snabb sökning (skippa händelser)", 
+        value=False,
+        help="Mycket snabbare (10-20x) men ingen nyhetssökning. Perfekt för explorativ sökning!"
+    )
+    
     st.sidebar.subheader("📰 Händelser")
-    check_vinstvarning = st.sidebar.checkbox("⚠️ Vinstvarning")
-    check_rapport = st.sidebar.checkbox("📊 Rapport (30 dagar)")
-    check_insider = st.sidebar.checkbox("👤 Insider")
-    check_ny_vd = st.sidebar.checkbox("🎯 Ny VD")
+    
+    # Inaktivera händelsefilter om snabb sökning är på
+    if snabb_sokning:
+        st.sidebar.info("🚀 Snabb sökning aktiverad - händelsefilter inaktiverade")
+        check_vinstvarning = False
+        check_rapport = False
+        check_insider = False
+        check_ny_vd = False
+    else:
+        check_vinstvarning = st.sidebar.checkbox("⚠️ Vinstvarning")
+        check_rapport = st.sidebar.checkbox("📊 Rapport (30 dagar)")
+        check_insider = st.sidebar.checkbox("👤 Insider")
+        check_ny_vd = st.sidebar.checkbox("🎯 Ny VD")
     
     st.sidebar.subheader("📈 Teknisk Trend")
     streak_filter = st.sidebar.slider("Trend (Dagar upp/ner)", -15, 15, (-15, 15))
@@ -563,7 +581,15 @@ def main():
             st.warning("⚠️ Inga kategorier valda!")
             return
         
-        st.info(f"🚀 Skannar {total} aktier...")
+        # Estimera scanningstid baserat på filter
+        has_events = check_vinstvarning or check_rapport or check_insider or check_ny_vd
+        if has_events:
+            estimated_time = f"~{total//10}-{total//5} sekunder"
+            st.info(f"🚀 Skannar {total} aktier med händelsesök... Estimerad tid: {estimated_time}")
+            st.caption("💡 Tips: Aktivera '⚡ Snabb sökning' för 10-20x snabbare resultat")
+        else:
+            estimated_time = f"~{total//50}-{total//25} sekunder"
+            st.info(f"⚡ Snabb sökning: {total} aktier... Estimerad tid: {estimated_time}")
         
         BATCH_SIZE = 50
         batches = [all_tickers[i:i + BATCH_SIZE] for i in range(0, total, BATCH_SIZE)]

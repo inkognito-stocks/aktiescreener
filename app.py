@@ -1945,9 +1945,22 @@ def show_screener():
             selected_categories[market] = selected_cats
             
             for cat in selected_cats:
-                total_tickers_estimated += len(ticker_lists[market][cat])
+                if cat in ticker_lists[market]:
+                    total_tickers_estimated += len(ticker_lists[market][cat])
     
-    if total_tickers_estimated > 0:
+    # Beräkna faktiskt antal unika aktier (tar bort duplicater)
+    if selected_markets and selected_categories:
+        unique_tickers = set()
+        for market in selected_markets:
+            if market in selected_categories and selected_categories[market]:
+                for category in selected_categories[market]:
+                    if category in ticker_lists[market]:
+                        unique_tickers.update(ticker_lists[market][category])
+        total_unique = len(unique_tickers)
+        
+        if total_unique > 0:
+            st.sidebar.success(f"📊 {total_unique} aktier kommer att scannas")
+    elif total_tickers_estimated > 0:
         st.sidebar.success(f"📊 ~{total_tickers_estimated} aktier valda")
     
     st.sidebar.markdown("---")
@@ -2216,17 +2229,20 @@ def show_screener():
             st.warning("⚠️ Välj minst en marknad!")
             return
         
+        # Beräkna antal aktier baserat på valda marknader och kategorier
         all_tickers = []
         for market in selected_markets:
-            if market in selected_categories:
+            if market in selected_categories and selected_categories[market]:
                 for category in selected_categories[market]:
-                    all_tickers.extend(ticker_lists[market][category])
+                    if category in ticker_lists[market]:
+                        all_tickers.extend(ticker_lists[market][category])
         
+        # Ta bort duplicater (samma ticker kan finnas i flera kategorier)
         all_tickers = list(set(all_tickers))
         total = len(all_tickers)
         
         if total == 0:
-            st.warning("⚠️ Inga kategorier valda!")
+            st.warning("⚠️ Inga kategorier valda! Välj minst en kategori från valda marknader.")
             return
         
         # Estimera scanningstid baserat på filter

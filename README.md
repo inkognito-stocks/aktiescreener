@@ -1,33 +1,41 @@
-# 🔎 Börs-Sök - Aktiescreener
+# 🌍 Global AktieScreener
 
-En kraftfull sökmotor för svenska aktier med avancerade filter för pris, värdering, trend och händelser.
+En kraftfull sökmotor för aktier från **Sverige, Kanada och USA** med avancerade filter för pris, värdering och trend.
 
 ## 🚀 Funktioner
 
-### Prisfilter
-- Välj prisintervall precis som på Blocket
-- Från 0 till 1000 SEK
+### 🌍 Multi-Market Support
+- **Sverige 🇸🇪** - OMXS30, Mid Cap, Small Cap, First North
+- **Kanada 🇨🇦** - TSX Energy, TSX Mining, Venture, CSE
+- **USA 🇺🇸** - Tech, Crypto, Biotech, Energy, Meme stocks
+- **546+ aktier** totalt
 
-### Värderingsfilter
+### ⚡ Batch-Download (SUPERSNABBT!)
+- Laddar ner **50 aktier samtidigt** med `yf.download`
+- **10-20x snabbare** än individuell nedladdning
+- Exempel: 250 aktier på ~30 sekunder (vs 3-5 minuter tidigare)
+- Progress tracking per batch
+
+### 💰 Prisfilter
+- Välj prisintervall från 0-2000 (SEK/CAD/USD)
+- Jämför valutor direkt
+
+### 📊 Värderingsfilter
 - **P/E-tal** (Price/Earnings) - Värdering i förhållande till vinst
 - **P/B-tal** (Price/Book) - Pris i förhållande till bokfört värde
+- Valfria filter som kan aktiveras/inaktiveras
 
-### Händelsefilter (Yahoo Finance Press Releases)
-- ⚠️ **Vinstvarning / Profit Warning** - Söker i Yahoo Finance press releases efter vinstvarningar, nedgraderingar och varningar
-- 📊 **Rapport** - Visar om kvartalsrapport släpptes nyligen eller ska släppas inom 30 dagar (kontrollerar både rapportkalender och press releases)
-- 👤 **Insidertransaktioner** - Söker efter insiderköp och insiderförsäljning (t.ex. VD, styrelseledamöter)
-- 🎯 **Ny VD/ledning** - Söker efter VD-byten och ledningsförändringar
-
-**Fördel med Yahoo Finance:** Mer träffsäkert än att söka på företagsnamn - hämtar nyheter direkt kopplade till ticker-symbolen!
-
-### Teknisk Trend
+### 📈 Teknisk Trend
 - Filtrera på antal dagar aktien gått upp eller ner i rad
 - -15 till +15 dagar
+- Beräknas direkt från prishistorik
 
-### Resultat
-- Visar 5-40 bolag som matchar dina kriterier
-- Statistik över resultat
+### 📊 Resultat
+- Visar upp till 100 matchande aktier
+- **Marknad-kolumn** visar vilket land aktien kommer från
+- Realtidsstatistik (antal aktier, marknader, trend)
 - Exportera till CSV
+- Scanningstid visas
 
 ## 💻 Installation
 
@@ -47,12 +55,18 @@ Ticker-listan finns i `tickers.py` - uppdatera den filen för att lägga till/ta
 
 Se [TICKER_GUIDE.md](TICKER_GUIDE.md) för detaljerad guide.
 
-## ⚡ Performance
+## ⚡ Performance (Nya Batch-systemet)
 
-- **Parallell processing:** 10 aktier analyseras samtidigt
+- **Batch-download:** 50 aktier per batch med `yf.download`
+- **10-20x snabbare** än tidigare version
 - **Caching:** 45 minuters cache (undviker Yahoo Finance rate limiting)
-- **Smart filtrering:** Filtrerar bort aktier tidigt för snabbare resultat
-- **Hastighet:** Large Cap (51 aktier) ~20-30 sekunder
+- **Hastighet:**
+  - 50 aktier: ~5-10 sekunder
+  - 250 aktier: ~15-30 sekunder  
+  - 500 aktier: ~30-60 sekunder
+
+**Gamla versionen** (`app_old.py`): 250 aktier = 3-5 minuter
+**Nya versionen** (`app.py`): 250 aktier = 15-30 sekunder ⚡
 
 ## 📖 Användning
 

@@ -594,7 +594,7 @@ def main():
         "Marknader att scanna",
         options=all_markets,
         default=["Sverige 🇸🇪"],
-        help="Välj marknader."
+        help="Välj vilka marknader du vill scanna. Du kan välja flera samtidigt (Sverige, USA, Kanada)."
     )
     
     selected_categories = {}
@@ -609,7 +609,8 @@ def main():
                 f"Kategorier i {market}",
                 options=categories,
                 default=default_cats,
-                key=f"cat_{market}"
+                key=f"cat_{market}",
+                help=f"Välj vilka kategorier från {market} du vill inkludera. Exempel: Large Cap, Mid Cap, Small Cap för Sverige."
             )
             selected_categories[market] = selected_cats
             
@@ -622,7 +623,11 @@ def main():
     st.sidebar.markdown("---")
     
     # --- PRIS & FILTER ---
-    price_range = st.sidebar.slider("Prisintervall (Nominellt)", 0, 2000, (0, 2000), 10)
+    price_range = st.sidebar.slider(
+        "Prisintervall (Nominellt)", 
+        0, 2000, (0, 2000), 10,
+        help="Filtrera aktier baserat på deras nuvarande pris. Dra slidern för att välja min- och maxpris. Exempel: 10-100 kr för att hitta aktier mellan 10 och 100 kr."
+    )
     
     st.sidebar.markdown("---")
     
@@ -643,13 +648,29 @@ def main():
         check_insider = False
         check_ny_vd = False
     else:
-        check_vinstvarning = st.sidebar.checkbox("⚠️ Vinstvarning")
-        check_rapport = st.sidebar.checkbox("📊 Rapport (30 dagar)")
-        check_insider = st.sidebar.checkbox("👤 Insider")
-        check_ny_vd = st.sidebar.checkbox("🎯 Ny VD")
+        check_vinstvarning = st.sidebar.checkbox(
+            "⚠️ Vinstvarning",
+            help="Hitta aktier som har varnat för sämre resultat eller sänkt prognos. Inkluderar både hårda varningar och mjukare 'resultatuppdateringar'."
+        )
+        check_rapport = st.sidebar.checkbox(
+            "📊 Rapport (30 dagar)",
+            help="Hitta aktier som har eller kommer att släppa kvartals-/årsrapport inom de närmaste 30 dagarna. Bra för att hitta aktier inför earnings."
+        )
+        check_insider = st.sidebar.checkbox(
+            "👤 Insider",
+            help="Hitta aktier där insiders (VD, styrelse, större ägare) har köpt eller sålt aktier. Insiderköp kan vara ett positivt tecken."
+        )
+        check_ny_vd = st.sidebar.checkbox(
+            "🎯 Ny VD",
+            help="Hitta aktier som har fått ny VD eller ledningsändringar. Nya ledare kan innebära strategiförändringar och aktiekursrörelser."
+        )
     
     st.sidebar.subheader("📈 Teknisk Trend")
-    streak_filter = st.sidebar.slider("Trend (Dagar upp/ner)", -15, 15, (-15, 15))
+    streak_filter = st.sidebar.slider(
+        "Trend (Dagar upp/ner)", 
+        -15, 15, (-15, 15),
+        help="Filtrera aktier baserat på hur många dagar i rad de har stängt uppåt (+) eller nedåt (-). Exempel: +3 till +10 = aktier som stängt uppåt 3-10 dagar i rad. -5 till -1 = aktier som stängt nedåt 1-5 dagar i rad."
+    )
     
     # Utvecklingsperiod (alltid synlig)
     st.sidebar.markdown("---")
@@ -657,31 +678,34 @@ def main():
         "📊 Utvecklingsperiod",
         ["1 dag", "1 vecka", "1 månad", "3 månader", "6 månader", "12 månader", "3 år", "5 år"],
         index=0,
-        help="Välj tidsperiod för utvecklingskolumnen i resultaten"
+        help="Välj tidsperiod för utvecklingskolumnen i resultaten. Visar hur mycket aktien har gått upp/ner över den valda perioden. Exempel: '1 månad' visar utveckling senaste månaden, '3 år' visar långsiktig utveckling."
     )
     
     # Prisförändring filter
     st.sidebar.markdown("---")
-    use_price_change = st.sidebar.checkbox("Använd prisförändring-filter")
+    use_price_change = st.sidebar.checkbox(
+        "Använd prisförändring-filter",
+        help="Aktivera för att filtrera aktier baserat på hur mycket de har gått upp eller ner över en vald tidsperiod. Perfekt för att hitta momentum-aktier eller dippar."
+    )
     
     if use_price_change:
         price_change_period = st.sidebar.selectbox(
             "Tidsperiod",
             ["1 dag", "1 vecka", "1 månad", "3 månader"],
-            help="Hur långt bakåt ska prisförändringen beräknas?"
+            help="Hur långt bakåt ska prisförändringen beräknas? '1 dag' = jämför med igår, '1 vecka' = jämför med för 5 handelsdagar sedan, '1 månad' = jämför med för ~20 handelsdagar sedan."
         )
         
         price_change_range = st.sidebar.slider(
             "Prisförändring (%)",
             -50.0, 100.0, (0.0, 20.0),
             step=0.5,
-            help="Filtrera bolag som gått upp/ner inom detta intervall"
+            help="Filtrera bolag som gått upp/ner inom detta intervall. Exempel: 5-15% = aktier som gått upp 5-15%, -10% till -5% = aktier som fallit 5-10% (potentiella köptillfällen)."
         )
         
         # Volymfilter (valfritt)
         use_volume_filter = st.sidebar.checkbox(
             "📊 Filtrera på volym",
-            help="Välj bara aktier med ovanlig volym (högre/lägre än normalt)"
+            help="Aktivera för att bara visa aktier med ovanlig volym. Hög volym + uppgång = stark signal, låg volym + uppgång = svag signal. Perfekt för att hitta breakouts på hög volym."
         )
         
         if use_volume_filter:
@@ -689,7 +713,7 @@ def main():
                 "Min. relativ volym (%)",
                 0, 500, 100,
                 step=10,
-                help="100% = normal volym, 200% = dubbel volym, 50% = halv volym"
+                help="Sätt minimum relativ volym. 100% = normal volym, 150% = 50% mer än normalt, 200% = dubbel volym. Högre värden = bara aktier med ovanligt hög omsättning (breakouts, nyheter)."
             )
         else:
             volume_threshold = None

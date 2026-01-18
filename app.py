@@ -1982,24 +1982,24 @@ def show_screener():
             "Min börsvärde (M)",
             min_value=0.0,
             max_value=1000.0,
-            value=st.session_state.market_cap_min,
+            value=float(st.session_state.market_cap_min),
             step=10.0,
             key="market_cap_min_input",
             help="Minsta börsvärde i miljarder USD (t.ex. 1 = $1B, 100 = $100B)"
         )
-        st.session_state.market_cap_min = market_cap_min_input
+        st.session_state.market_cap_min = float(market_cap_min_input)
     
     with col_mcap_max:
         market_cap_max_input = st.number_input(
             "Max börsvärde (M)",
             min_value=0.0,
             max_value=1000.0,
-            value=st.session_state.market_cap_max,
+            value=float(st.session_state.market_cap_max),
             step=10.0,
             key="market_cap_max_input",
             help="Största börsvärde i miljarder USD (t.ex. 100 = $100B, 1000 = $1T)"
         )
-        st.session_state.market_cap_max = market_cap_max_input
+        st.session_state.market_cap_max = float(market_cap_max_input)
     
     # Konvertera till faktiska värden (miljarder -> faktiskt värde)
     market_cap_min_value = st.session_state.market_cap_min * 1_000_000_000
@@ -2014,9 +2014,9 @@ def show_screener():
         help="Dra slidern eller använd textfälten ovanför för att ange börsvärde-intervall. Exempel: 1-100 för att hitta aktier med börsvärde mellan $1B och $100B."
     )
     
-    # Uppdatera session_state när slidern ändras
-    st.session_state.market_cap_min = market_cap_range[0]
-    st.session_state.market_cap_max = market_cap_range[1]
+    # Uppdatera session_state när slidern ändras (säkerställ float-typ)
+    st.session_state.market_cap_min = float(market_cap_range[0])
+    st.session_state.market_cap_max = float(market_cap_range[1])
     
     # Konvertera till faktiska värden för filtrering
     market_cap_range_values = (market_cap_range[0] * 1_000_000_000, market_cap_range[1] * 1_000_000_000)

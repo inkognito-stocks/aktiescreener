@@ -327,13 +327,17 @@ def process_batch_results(data, tickers_in_batch, price_range, pe_range, pb_rang
                         'vinstvarning', 'sänker prognos', 'nedjusterar', 'varning',
                         'nedrevidera', 'justerar ned', 'sänker',
                         'resultatuppdatering', 'reviderad prognos', 'omvärderar',
-                        'försämrad', 'svagare', 'lägre än väntat', 'utmaning'
+                        'försämrad', 'svagare', 'lägre än väntat', 'utmaning',
+                        'preliminärt resultat', 'handelsuppdatering',
+                        'uppdatering av finansiella mål', 'prognosjustering'
                     ]
                 else:
                     warning_keywords = [
                         'profit warning', 'lowers guidance', 'downgrade', 
                         'misses', 'weak results', 'below expectations',
-                        'result update', 'revised guidance', 'challenges'
+                        'result update', 'revised guidance', 'challenges',
+                        'trading update', 'preliminary results',
+                        'guidance update', 'financial update'
                     ]
                 
                 news_hit = news_checker(ticker, warning_keywords, days_back=30)

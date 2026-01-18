@@ -780,32 +780,32 @@ def main():
         help="Mycket snabbare (10-20x) men ingen nyhetssökning. Perfekt för explorativ sökning!"
     )
     
-    st.sidebar.subheader("📰 Händelser")
-    
-    # Inaktivera händelsefilter om snabb sökning är på
-    if snabb_sokning:
-        st.sidebar.info("🚀 Snabb sökning aktiverad - händelsefilter inaktiverade")
-        check_vinstvarning = False
-        check_rapport = False
-        check_insider = False
-        check_ny_vd = False
-    else:
-        check_vinstvarning = st.sidebar.checkbox(
-            "⚠️ Vinstvarning",
-            help="Hitta aktier som har varnat för sämre resultat eller sänkt prognos. Inkluderar både hårda varningar och mjukare 'resultatuppdateringar'."
-        )
-        check_rapport = st.sidebar.checkbox(
-            "📊 Rapport (30 dagar)",
-            help="Hitta aktier som har eller kommer att släppa kvartals-/årsrapport inom de närmaste 30 dagarna. Bra för att hitta aktier inför earnings."
-        )
-        check_insider = st.sidebar.checkbox(
-            "👤 Insider",
-            help="Hitta aktier där insiders (VD, styrelse, större ägare) har köpt eller sålt aktier. Insiderköp kan vara ett positivt tecken."
-        )
-        check_ny_vd = st.sidebar.checkbox(
-            "🎯 Ny VD",
-            help="Hitta aktier som har fått ny VD eller ledningsändringar. Nya ledare kan innebära strategiförändringar och aktiekursrörelser."
-        )
+    # Händelser (expanderbar sektion)
+    with st.sidebar.expander("📰 Händelser", expanded=False):
+        # Inaktivera händelsefilter om snabb sökning är på
+        if snabb_sokning:
+            st.info("🚀 Snabb sökning aktiverad - händelsefilter inaktiverade")
+            check_vinstvarning = False
+            check_rapport = False
+            check_insider = False
+            check_ny_vd = False
+        else:
+            check_vinstvarning = st.checkbox(
+                "⚠️ Vinstvarning",
+                help="Hitta aktier som har varnat för sämre resultat eller sänkt prognos. Inkluderar både hårda varningar och mjukare 'resultatuppdateringar'."
+            )
+            check_rapport = st.checkbox(
+                "📊 Rapport (30 dagar)",
+                help="Hitta aktier som har eller kommer att släppa kvartals-/årsrapport inom de närmaste 30 dagarna. Bra för att hitta aktier inför earnings."
+            )
+            check_insider = st.checkbox(
+                "👤 Insider",
+                help="Hitta aktier där insiders (VD, styrelse, större ägare) har köpt eller sålt aktier. Insiderköp kan vara ett positivt tecken."
+            )
+            check_ny_vd = st.checkbox(
+                "🎯 Ny VD",
+                help="Hitta aktier som har fått ny VD eller ledningsändringar. Nya ledare kan innebära strategiförändringar och aktiekursrörelser."
+            )
     
     st.sidebar.subheader("📈 Teknisk Trend")
     

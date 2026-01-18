@@ -97,7 +97,84 @@ ticker_lists = {
 }
 
 # --- Inställningar ---
-st.set_page_config(page_title="AktieScreener Global", layout="wide")
+st.set_page_config(
+    page_title="AktieScreener Global", 
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Custom CSS för bättre UI
+st.markdown("""
+<style>
+    /* Förbättra sidebar */
+    .css-1d391kg {
+        padding-top: 1.5rem;
+    }
+    
+    /* Kompaktare spacing */
+    .stMarkdown {
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Bättre tabell-läsbarhet */
+    .dataframe {
+        font-size: 0.85rem;
+    }
+    
+    .dataframe th {
+        background-color: #f0f2f6;
+        font-weight: 600;
+        padding: 0.5rem;
+    }
+    
+    .dataframe td {
+        padding: 0.4rem;
+    }
+    
+    /* Tydligare knappar */
+    .stButton > button {
+        width: 100%;
+        font-weight: 600;
+        padding: 0.5rem 1rem;
+        margin-top: 0.5rem;
+    }
+    
+    /* Kompaktare multiselect */
+    .stMultiSelect > div {
+        padding: 0.25rem 0;
+    }
+    
+    /* Bättre info-boxes */
+    .stInfo {
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stSuccess {
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+    }
+    
+    /* Tydligare headers */
+    h3 {
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+    
+    /* Kompaktare metrics */
+    .stMetric {
+        padding: 0.5rem;
+    }
+    
+    /* Snabbare transitions */
+    * {
+        transition: none !important;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # --- REDDIT TRENDING TICKERS ---
 
@@ -1062,13 +1139,18 @@ def main():
         # Om något går fel, fortsätt utan banner
         pass
     
-    st.title("🌍 Global AktieScreener")
-    st.markdown("Scanna aktier från **Sverige, Kanada och USA** (Listor från `market_data.py`)")
+    # Huvudrubrik med kompakt layout
+    col_title, col_info = st.columns([3, 1])
+    with col_title:
+        st.title("🌍 Global AktieScreener")
+    with col_info:
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.caption("Sverige • Kanada • USA")
     
-
+    st.markdown("---")
     
     # --- MARKNADSVAL ---
-    st.sidebar.subheader("🌍 Välj Marknader")
+    st.sidebar.markdown("### 🌍 Marknader")
     
     all_markets = list(ticker_lists.keys())
     selected_markets = st.sidebar.multiselect(
@@ -1099,11 +1181,13 @@ def main():
                 total_tickers_estimated += len(ticker_lists[market][cat])
     
     if total_tickers_estimated > 0:
-        st.sidebar.info(f"📊 Totalt ~{total_tickers_estimated} aktier valda")
+        st.sidebar.success(f"📊 ~{total_tickers_estimated} aktier valda")
     
     st.sidebar.markdown("---")
     
     # --- PRIS & FILTER ---
+    st.sidebar.markdown("### 💰 Filter")
+    
     # Initiera session_state för prisintervall
     if 'price_min' not in st.session_state:
         st.session_state.price_min = 0
@@ -1255,14 +1339,18 @@ def main():
     st.sidebar.markdown("---")
     
     # Snabb sökning-läge
+    st.sidebar.markdown("### ⚡ Prestanda")
     snabb_sokning = st.sidebar.checkbox(
-        "⚡ Snabb sökning (skippa händelser)", 
+        "Snabb sökning (skippa händelser)", 
         value=False,
         help="Mycket snabbare (10-20x) men ingen nyhetssökning. Perfekt för explorativ sökning!"
     )
     
+    st.sidebar.markdown("---")
+    
     # Händelser (expanderbar sektion)
-    with st.sidebar.expander("📰 Händelser", expanded=False):
+    st.sidebar.markdown("### 📰 Händelser")
+    with st.sidebar.expander("Visa händelsefilter", expanded=False):
         # Inaktivera händelsefilter om snabb sökning är på
         if snabb_sokning:
             st.info("🚀 Snabb sökning aktiverad - händelsefilter inaktiverade")
@@ -1337,8 +1425,9 @@ def main():
     
     # Utvecklingsperiod (alltid synlig)
     st.sidebar.markdown("---")
+    st.sidebar.markdown("### 📊 Utveckling")
     development_period = st.sidebar.selectbox(
-        "📊 Utvecklingsperiod",
+        "Tidsperiod",
         ["1 dag", "1 vecka", "1 månad", "3 månader", "6 månader", "12 månader", "3 år", "5 år"],
         index=0,
         help="Välj tidsperiod för utvecklingskolumnen i resultaten. Visar hur mycket aktien har gått upp/ner över den valda perioden. Exempel: '1 månad' visar utveckling senaste månaden, '3 år' visar långsiktig utveckling."
@@ -1369,12 +1458,20 @@ def main():
         # Estimera scanningstid baserat på filter
         has_events = check_vinstvarning or check_rapport or check_insider or check_ny_vd
         if has_events:
-            estimated_time = f"~{total//10}-{total//5} sekunder"
-            st.info(f"🚀 Skannar {total} aktier med händelsesök... Estimerad tid: {estimated_time}")
-            st.caption("💡 Tips: Aktivera '⚡ Snabb sökning' för 10-20x snabbare resultat")
+            estimated_time = f"~{total//10}-{total//5}s"
+            mode_text = "Händelsesök"
         else:
-            estimated_time = f"~{total//50}-{total//25} sekunder"
-            st.info(f"⚡ Snabb sökning: {total} aktier... Estimerad tid: {estimated_time}")
+            estimated_time = f"~{total//50}-{total//25}s"
+            mode_text = "Snabb sökning"
+        
+        # Kompakt status-header
+        col_status1, col_status2, col_status3 = st.columns([2, 1, 1])
+        with col_status1:
+            st.info(f"🔍 Skannar {total} aktier ({mode_text})")
+        with col_status2:
+            st.metric("Estimerad tid", estimated_time)
+        with col_status3:
+            st.metric("Batches", f"{(total-1)//50 + 1}")
         
         BATCH_SIZE = 50
         batches = [all_tickers[i:i + BATCH_SIZE] for i in range(0, total, BATCH_SIZE)]
@@ -1387,7 +1484,7 @@ def main():
         start_time = time.time()
         
         for batch_idx, batch in enumerate(batches, 1):
-            status_text.text(f"⚡ Processar batch {batch_idx}/{num_batches} ({len(batch)} st)...")
+            status_text.caption(f"⚡ Batch {batch_idx}/{num_batches} ({len(batch)} aktier)...")
             progress_bar.progress(batch_idx / num_batches)
             
             batch_data = download_batch_data(batch, batch_idx, num_batches)
@@ -1402,7 +1499,8 @@ def main():
                 all_results.extend(batch_results)
                 
                 if all_results:
-                    results_container.success(f"✅ Hittills: {len(all_results)} matchande")
+                    elapsed_so_far = time.time() - start_time
+                    results_container.info(f"✅ Hittills: {len(all_results)} matchande ({elapsed_so_far:.1f}s)")
         
         status_text.empty()
         progress_bar.empty()
@@ -1413,16 +1511,39 @@ def main():
             # Sortera efter momentum-score (högst först)
             all_results_sorted = sorted(all_results, key=lambda x: x.get('Momentum', 0), reverse=True)
             display_results = all_results_sorted[:100]
-            st.success(f"✅ Klar! Hittade {len(all_results)} aktier på {elapsed_time:.1f}s (sorterade efter momentum)")
+            
+            # Visa resultat med bättre layout
+            col_stats1, col_stats2, col_stats3 = st.columns(3)
+            with col_stats1:
+                st.metric("Hittade aktier", len(all_results))
+            with col_stats2:
+                st.metric("Visas", min(100, len(all_results)))
+            with col_stats3:
+                st.metric("Tid", f"{elapsed_time:.1f}s")
+            
+            st.info(f"📊 Sorterade efter momentum-score (högst först). Top {min(100, len(all_results))} visas.")
+            st.markdown("---")
             
             df_results = pd.DataFrame(display_results)
             
-            # Flytta Momentum-kolumnen till andra positionen (efter Ticker)
-            if 'Momentum' in df_results.columns:
-                cols = list(df_results.columns)
-                cols.remove('Momentum')
-                cols.insert(1, 'Momentum')  # Efter Ticker
-                df_results = df_results[cols]
+            # Förbättra kolumnordning - viktigaste först
+            priority_order = ['Ticker', 'Momentum', 'Marknad', 'Pris', 'Dagens stängning', 
+                            'Utveckling', 'Relativ Volym', 'Volymspik', 'Gap', 'Breakout', 
+                            'Trend (Dagar)', 'Förändring', 'Händelser']
+            
+            # Sortera kolumner enligt prioritet, lägg resten i slutet
+            existing_cols = list(df_results.columns)
+            ordered_cols = []
+            for col in priority_order:
+                # Hitta matchande kolumner (kan vara med valuta eller period)
+                matches = [c for c in existing_cols if col.lower() in c.lower() or c.startswith(col)]
+                if matches:
+                    ordered_cols.extend(matches)
+                    existing_cols = [c for c in existing_cols if c not in matches]
+            
+            # Lägg till resterande kolumner
+            ordered_cols.extend([c for c in existing_cols if c not in ordered_cols])
+            df_results = df_results[ordered_cols]
             
             # Färgkoda kolumner med stängning/utveckling
             def color_cells(val):
@@ -1463,17 +1584,29 @@ def main():
                 styled_df = df_results.style.applymap(
                     color_cells,
                     subset=color_columns
-                )
+                ).format({
+                    'Momentum': '{:.0f}'  # Visa momentum som heltal
+                }, na_rep='N/A')
                 st.dataframe(styled_df, use_container_width=True, height=600)
             else:
                 st.dataframe(df_results, use_container_width=True, height=600)
             
+            st.markdown("---")
             csv = df_results.to_csv(index=False).encode('utf-8')
-            st.download_button("📥 Ladda ner CSV", csv, "resultat.csv", "text/csv")
+            col_dl1, col_dl2 = st.columns([1, 4])
+            with col_dl1:
+                st.download_button("📥 Ladda ner CSV", csv, "resultat.csv", "text/csv", use_container_width=True)
         else:
-            st.warning("⚠️ Inga aktier matchade dina filter.")
+            st.warning("⚠️ Inga aktier matchade dina filter. Prova att ändra filterinställningarna.")
     else:
-        st.info("👈 Välj marknad och klicka på 'Skanna Marknaden'")
+        st.info("👈 **Kom igång:** Välj marknad och kategorier i sidebar, sedan klicka på 'Skanna Marknaden'")
+        st.markdown("""
+        ### 💡 Snabbtips:
+        - **Snabb sökning** = 10-20x snabbare (rekommenderas för första sökningen)
+        - **Momentum-score** = Automatisk sortering efter starkaste signaler
+        - **Volymspikar** = Identifierar ovanligt hög omsättning
+        - **Breakouts** = Hitta aktier som bryter genom viktiga prisnivåer
+        """)
 
 if __name__ == "__main__":
     main()

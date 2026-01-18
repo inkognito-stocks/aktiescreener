@@ -1857,41 +1857,29 @@ def main():
     # Branschknappar/flikar ovanför huvudrubriken
     st.markdown("### Branscher")
     
-    # Initiera session_state för vald bransch
-    if 'selected_industry' not in st.session_state:
-        st.session_state.selected_industry = 'stocks'
-    
-    industry_cols = st.columns(4)
-    
-    # Hantera knapp-klick med on_click callbacks för att undvika rerun-problem
-    def set_industry(industry):
-        st.session_state.selected_industry = industry
-    
-    with industry_cols[0]:
-        st.button("📦 Råvaror", use_container_width=True, key="commodities_btn", 
-                 type="primary" if st.session_state.selected_industry == 'commodities' else "secondary",
-                 on_click=set_industry, args=('commodities',))
-    with industry_cols[1]:
-        st.button("🛢️ Olja", use_container_width=True, key="oil_btn",
-                 type="primary" if st.session_state.selected_industry == 'oil' else "secondary",
-                 on_click=set_industry, args=('oil',))
-    with industry_cols[2]:
-        st.button("₿ Krypto", use_container_width=True, key="crypto_btn",
-                 type="primary" if st.session_state.selected_industry == 'crypto' else "secondary",
-                 on_click=set_industry, args=('crypto',))
-    with industry_cols[3]:
-        st.button("📈 Aktier", use_container_width=True, key="stocks_btn",
-                 type="primary" if st.session_state.selected_industry == 'stocks' else "secondary",
-                 on_click=set_industry, args=('stocks',))
+    # Använd radio buttons för bättre kompatibilitet
+    selected_industry = st.radio(
+        "Välj bransch:",
+        options=['stocks', 'commodities', 'oil', 'crypto'],
+        format_func=lambda x: {
+            'stocks': '📈 Aktier',
+            'commodities': '📦 Råvaror',
+            'oil': '🛢️ Olja',
+            'crypto': '₿ Krypto'
+        }[x],
+        horizontal=True,
+        index=0,
+        key="industry_selector"
+    )
     
     st.markdown("---")
     
     # Visa rätt innehåll baserat på vald bransch
-    if st.session_state.selected_industry == 'commodities':
+    if selected_industry == 'commodities':
         display_commodities()
-    elif st.session_state.selected_industry == 'oil':
+    elif selected_industry == 'oil':
         display_oil()
-    elif st.session_state.selected_industry == 'crypto':
+    elif selected_industry == 'crypto':
         display_crypto()
     else:
         # Standard: Visa aktier

@@ -3,6 +3,8 @@ import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
 import time
+import requests
+from bs4 import BeautifulSoup
 
 # --- IMPORT FRÅN MARKET_DATA.PY ---
 try:
@@ -92,6 +94,7 @@ def get_market_from_ticker(ticker):
 def check_yf_news(ticker_symbol, keywords_list, days_back=30):
     """
     Söker i Yahoo Finance press releases och nyheter.
+    Används för USA och Kanada.
     """
     try:
         stock = yf.Ticker(ticker_symbol)
@@ -135,6 +138,84 @@ def check_yf_news(ticker_symbol, keywords_list, days_back=30):
                         'publisher': content.get('provider', {}).get('displayName', 'Unknown'),
                         'date': pub_date
                     }
+        return None
+    except Exception as e:
+        return None
+
+@st.cache_data(ttl=1800)  # Cache i 30 minuter
+def check_cision_news(ticker_symbol, keywords_list, days_back=30):
+    """
+    Söker i Cision press releases för SVENSKA bolag.
+    Mycket mer pålitlig än Yahoo Finance för svenska pressmeddelanden!
+    """
+    try:
+        # Ta bort .ST från ticker för att få bolagsnamn
+        company_code = ticker_symbol.replace('.ST', '')
+        
+        # Cision URL för svenska pressmeddelanden
+        # Format: https://news.cision.com/se/[företag]/r/
+        # Vi söker via deras search API
+        search_url = f"https://news.cision.com/se/search/pressreleases?keywords={company_code}"
+        
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+        
+        response = requests.get(search_url, headers=headers, timeout=10)
+        if response.status_code != 200:
+            return None
+        
+        soup = BeautifulSoup(response.content, 'html.parser')
+        
+        # Hitta pressmeddelanden
+        press_releases = soup.find_all('div', class_='feed-item')
+        
+        cutoff_date = datetime.now()
+        
+        for release in press_releases[:15]:  # Kolla senaste 15
+            try:
+                # Hitta titel
+                title_elem = release.find('h3') or release.find('a', class_='title')
+                if not title_elem:
+                    continue
+                title = title_elem.get_text(strip=True).lower()
+                
+                # Hitta datum
+                date_elem = release.find('time') or release.find('span', class_='date')
+                if date_elem:
+                    date_str = date_elem.get('datetime', date_elem.get_text(strip=True))
+                    try:
+                        if 'T' in date_str:
+                            pub_date = datetime.fromisoformat(date_str.replace('Z', ''))
+                        else:
+                            # Försök parse svenska datum
+                            pub_date = datetime.strptime(date_str, '%Y-%m-%d')
+                    except:
+                        continue
+                    
+                    days_diff = (cutoff_date - pub_date).days
+                    if days_diff > days_back or days_diff < 0:
+                        continue
+                else:
+                    continue
+                
+                # Sök efter nyckelord
+                for keyword in keywords_list:
+                    if keyword.lower() in title:
+                        link_elem = release.find('a')
+                        link = link_elem.get('href', '') if link_elem else ''
+                        if link and not link.startswith('http'):
+                            link = f"https://news.cision.com{link}"
+                        
+                        return {
+                            'title': title_elem.get_text(strip=True),
+                            'link': link,
+                            'publisher': 'Cision',
+                            'date': pub_date
+                        }
+            except Exception as e:
+                continue
+        
         return None
     except Exception as e:
         return None
@@ -225,19 +306,28 @@ def process_batch_results(data, tickers_in_batch, price_range, pe_range, pb_rang
                 if pb is None or not (pb_range[0] <= pb <= pb_range[1]):
                     continue
             
-            # --- HÄNDELSE-FILTRERING ---
+            # --- HÄNDELSE-FILTRERING (HYBRID: Cision för SE, Yahoo för US/CA) ---
             news_hits = []
             is_swedish = ticker.endswith('.ST')
+            
+            # Välj rätt nyhetskälla baserat på marknad
+            news_checker = check_cision_news if is_swedish else check_yf_news
             
             if check_vinstvarning:
                 warning_keywords = []
                 if is_swedish:
-                    warning_keywords = ['vinstvarning', 'sänker prognos', 'nedjusterar', 'profit warning', 'lowers', 'downgrade']
+                    warning_keywords = [
+                        'vinstvarning', 'sänker prognos', 'nedjusterar', 'varning',
+                        'nedrevidera', 'justerar ned', 'sänker'
+                    ]
                 else:
-                    warning_keywords = ['profit warning', 'lowers guidance', 'downgrade', 'misses', 'weak results']
+                    warning_keywords = [
+                        'profit warning', 'lowers guidance', 'downgrade', 
+                        'misses', 'weak results', 'below expectations'
+                    ]
                 
-                yf_hit = check_yf_news(ticker, warning_keywords, days_back=30)
-                if yf_hit:
+                news_hit = news_checker(ticker, warning_keywords, days_back=30)
+                if news_hit:
                     news_hits.append(f"⚠️ Vinstvarning")
                 else:
                     continue  # Filter aktivt men ingen träff -> hoppa över
@@ -248,21 +338,33 @@ def process_batch_results(data, tickers_in_batch, price_range, pe_range, pb_rang
                     news_hits.append(f"📊 {earnings_info}")
                 else:
                     # Fallback på nyhetssök om kalender saknas
-                    report_keywords = ['kvartalsrapport', 'delårsrapport'] if is_swedish else ['earnings', 'quarterly results']
-                    yf_hit = check_yf_news(ticker, report_keywords, days_back=30)
-                    if yf_hit:
+                    if is_swedish:
+                        report_keywords = ['kvartalsrapport', 'delårsrapport', 'bokslutskommuniké', 'Q1', 'Q2', 'Q3', 'Q4']
+                    else:
+                        report_keywords = ['earnings', 'quarterly results', 'reports']
+                    
+                    news_hit = news_checker(ticker, report_keywords, days_back=30)
+                    if news_hit:
                         news_hits.append(f"📊 Rapport")
             
             if check_insider:
-                insider_keywords = ['insider', 'köper', 'säljer'] if is_swedish else ['insider buying', 'director bought']
-                yf_hit = check_yf_news(ticker, insider_keywords, days_back=30)
-                if yf_hit:
+                if is_swedish:
+                    insider_keywords = ['insider', 'köper', 'säljer', 'förvärvat', 'avyttrat', 'insiderhandel']
+                else:
+                    insider_keywords = ['insider buying', 'insider selling', 'director bought', 'CEO bought']
+                
+                news_hit = news_checker(ticker, insider_keywords, days_back=30)
+                if news_hit:
                     news_hits.append(f"👤 Insider")
             
             if check_ny_vd:
-                vd_keywords = ['ny vd', 'vd avgår'] if is_swedish else ['new ceo', 'ceo resigns']
-                yf_hit = check_yf_news(ticker, vd_keywords, days_back=60)
-                if yf_hit:
+                if is_swedish:
+                    vd_keywords = ['ny vd', 'vd avgår', 'tillträder som vd', 'ny ceo', 'ledningsändring', 'ny styrelse']
+                else:
+                    vd_keywords = ['new ceo', 'ceo resigns', 'ceo appointed', 'management change']
+                
+                news_hit = news_checker(ticker, vd_keywords, days_back=60)
+                if news_hit:
                     news_hits.append(f"🎯 Ledning")
             
             # Avgör valuta

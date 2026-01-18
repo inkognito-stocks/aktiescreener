@@ -1857,16 +1857,22 @@ def main():
     # Branschknappar/flikar ovanför huvudrubriken
     st.markdown("### Branscher")
     
+    # Mappning för branschnamn
+    industry_labels = {
+        'stocks': '📈 Aktier',
+        'commodities': '📦 Råvaror',
+        'oil': '🛢️ Olja',
+        'crypto': '₿ Krypto'
+    }
+    
     # Använd radio buttons för bättre kompatibilitet
+    def format_industry(x):
+        return industry_labels.get(x, x)
+    
     selected_industry = st.radio(
         "Välj bransch:",
         options=['stocks', 'commodities', 'oil', 'crypto'],
-        format_func=lambda x: {
-            'stocks': '📈 Aktier',
-            'commodities': '📦 Råvaror',
-            'oil': '🛢️ Olja',
-            'crypto': '₿ Krypto'
-        }[x],
+        format_func=format_industry,
         horizontal=True,
         index=0,
         key="industry_selector"

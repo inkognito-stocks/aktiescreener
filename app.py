@@ -3,7 +3,36 @@ import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
 import time
-from tickers import ticker_lists
+
+# --- IMPORT FRÅN MARKET_DATA.PY ---
+try:
+    from market_data import (
+        SE_LARGE_CAP, 
+        SE_MID_CAP, 
+        SE_SMALL_CAP, 
+        US_ALL_STAR, 
+        CA_ALL_STAR
+    )
+except ImportError:
+    st.error("⚠️ Hittade inte 'market_data.py'. Se till att filen ligger i samma mapp!")
+    # Fallback-tomma listor så appen inte kraschar
+    SE_LARGE_CAP, SE_MID_CAP, SE_SMALL_CAP, US_ALL_STAR, CA_ALL_STAR = [], [], [], [], []
+
+# --- ORGANISERA LISTORNA ---
+# Vi bygger ihop strukturen här så att menyn i appen fungerar snyggt
+ticker_lists = {
+    "Sverige 🇸🇪": {
+        "Large Cap": SE_LARGE_CAP,
+        "Mid Cap": SE_MID_CAP,
+        "Small Cap": SE_SMALL_CAP
+    },
+    "USA 🇺🇸": {
+        "S&P 100 / All Star": US_ALL_STAR
+    },
+    "Kanada 🇨🇦": {
+        "TSX Top 40": CA_ALL_STAR
+    }
+}
 
 # --- Inställningar ---
 st.set_page_config(page_title="AktieScreener Global", layout="wide")
@@ -14,10 +43,8 @@ st.set_page_config(page_title="AktieScreener Global", layout="wide")
 def download_batch_data(tickers_batch, batch_num, total_batches):
     """
     Laddar ner data för en batch av tickers samtidigt.
-    Mycket snabbare än att hämta en i taget!
     """
     try:
-        # Download price data for all tickers in batch
         data = yf.download(
             tickers_batch,
             period="1mo",
@@ -25,11 +52,9 @@ def download_batch_data(tickers_batch, batch_num, total_batches):
             threads=True,
             progress=False
         )
-        
-        time.sleep(1)  # Rate limiting
+        time.sleep(1)  # Rate limiting för att vara snäll mot Yahoo
         return data
     except Exception as e:
-        st.warning(f"Batch {batch_num}/{total_batches} failed: {e}")
         return None
 
 def calculate_streak(prices):
@@ -66,8 +91,7 @@ def get_market_from_ticker(ticker):
 
 def check_yf_news(ticker_symbol, keywords_list, days_back=30):
     """
-    Söker i Yahoo Finance press releases och nyheter för en ticker
-    efter specifika nyckelord.
+    Söker i Yahoo Finance press releases och nyheter.
     """
     try:
         stock = yf.Ticker(ticker_symbol)
@@ -111,7 +135,6 @@ def check_yf_news(ticker_symbol, keywords_list, days_back=30):
                         'publisher': content.get('provider', {}).get('displayName', 'Unknown'),
                         'date': pub_date
                     }
-        
         return None
     except Exception as e:
         return None
@@ -181,7 +204,7 @@ def process_batch_results(data, tickers_in_batch, price_range, pe_range, pb_rang
             if not (min_streak <= streak <= max_streak):
                 continue
             
-            # Hämta valuation metrics (behöver enskild request, men bara för filtrerade)
+            # Hämta valuation metrics (om valt)
             pe, pb = None, None
             if use_pe or use_pb:
                 try:
@@ -209,73 +232,45 @@ def process_batch_results(data, tickers_in_batch, price_range, pe_range, pb_rang
             if check_vinstvarning:
                 warning_keywords = []
                 if is_swedish:
-                    warning_keywords = [
-                        'vinstvarning', 'sänker prognos', 'nedjusterar', 'varning',
-                        'profit warning', 'lowers', 'lower', 'cuts', 'reduces', 'downgrade', 
-                        'warning', 'miss', 'disappoints', 'weak', 'below expectations'
-                    ]
+                    warning_keywords = ['vinstvarning', 'sänker prognos', 'nedjusterar', 'profit warning', 'lowers', 'downgrade']
                 else:
-                    warning_keywords = [
-                        'profit warning', 'lowers guidance', 'lower guidance', 'cuts guidance',
-                        'downgrade', 'warning', 'miss', 'misses', 'disappoints', 'weak results',
-                        'below expectations', 'reduces'
-                    ]
+                    warning_keywords = ['profit warning', 'lowers guidance', 'downgrade', 'misses', 'weak results']
                 
                 yf_hit = check_yf_news(ticker, warning_keywords, days_back=30)
                 if yf_hit:
                     news_hits.append(f"⚠️ Vinstvarning")
                 else:
-                    continue  # Vinstvarning krävdes men hittades inte
+                    continue  # Filter aktivt men ingen träff -> hoppa över
             
             if check_rapport:
                 earnings_info = check_earnings_date(ticker, days_range=30)
                 if earnings_info:
                     news_hits.append(f"📊 {earnings_info}")
                 else:
-                    report_keywords = []
-                    if is_swedish:
-                        report_keywords = ['kvartalsrapport', 'delårsrapport', 'Q1', 'Q2', 'Q3', 'Q4', 'earnings']
-                    else:
-                        report_keywords = ['earnings', 'quarterly results', 'reports', 'Q1', 'Q2', 'Q3', 'Q4']
-                    
+                    # Fallback på nyhetssök om kalender saknas
+                    report_keywords = ['kvartalsrapport', 'delårsrapport'] if is_swedish else ['earnings', 'quarterly results']
                     yf_hit = check_yf_news(ticker, report_keywords, days_back=30)
                     if yf_hit:
                         news_hits.append(f"📊 Rapport")
             
             if check_insider:
-                insider_keywords = []
-                if is_swedish:
-                    insider_keywords = ['insider', 'köper', 'säljer', 'styrelse köp', 'vd köp']
-                else:
-                    insider_keywords = ['insider', 'insider buying', 'CEO bought', 'director bought']
-                
+                insider_keywords = ['insider', 'köper', 'säljer'] if is_swedish else ['insider buying', 'director bought']
                 yf_hit = check_yf_news(ticker, insider_keywords, days_back=30)
                 if yf_hit:
                     news_hits.append(f"👤 Insider")
             
             if check_ny_vd:
-                vd_keywords = []
-                if is_swedish:
-                    vd_keywords = ['ny vd', 'vd avgår', 'utsedd vd', 'ny ceo']
-                else:
-                    vd_keywords = ['new ceo', 'ceo appointed', 'ceo resigns', 'management change']
-                
+                vd_keywords = ['ny vd', 'vd avgår'] if is_swedish else ['new ceo', 'ceo resigns']
                 yf_hit = check_yf_news(ticker, vd_keywords, days_back=60)
                 if yf_hit:
                     news_hits.append(f"🎯 Ledning")
             
-            # Avgör valuta och marknad
+            # Avgör valuta
             market = get_market_from_ticker(ticker)
-            if market == 'Sverige 🇸🇪':
-                currency = "SEK"
-            elif market == 'Kanada 🇨🇦':
-                currency = "CAD"
-            else:
-                currency = "USD"
+            currency = "SEK" if market == 'Sverige 🇸🇪' else ("CAD" if market == 'Kanada 🇨🇦' else "USD")
             
             news_text = " | ".join(news_hits) if news_hits else "Ingen händelse"
             
-            # Lägg till resultat
             results.append({
                 "Ticker": ticker,
                 "Marknad": market,
@@ -286,7 +281,7 @@ def process_batch_results(data, tickers_in_batch, price_range, pe_range, pb_rang
                 "Händelser": news_text
             })
             
-        except Exception as e:
+        except Exception:
             continue
     
     return results
@@ -295,7 +290,7 @@ def process_batch_results(data, tickers_in_batch, price_range, pe_range, pb_rang
 
 def main():
     st.title("🌍 Global AktieScreener")
-    st.markdown("Scanna aktier från **Sverige, Kanada och USA** med avancerade filter")
+    st.markdown("Scanna aktier från **Sverige, Kanada och USA** (Listor från `market_data.py`)")
     
     # --- SIDEBAR ---
     st.sidebar.header("🎯 Filterinställningar")
@@ -308,83 +303,48 @@ def main():
         "Marknader att scanna",
         options=all_markets,
         default=["Sverige 🇸🇪"],
-        help="Välj vilka marknader du vill scanna. Fler marknader = längre scanningstid"
+        help="Välj marknader."
     )
     
-    # Välj kategorier baserat på valda marknader
     selected_categories = {}
     total_tickers_estimated = 0
     
     if selected_markets:
         for market in selected_markets:
             categories = list(ticker_lists[market].keys())
-            
-            # Default: välj bara första kategorin för varje marknad (för snabbhet)
             default_cats = [categories[0]] if categories else []
             
             selected_cats = st.sidebar.multiselect(
                 f"Kategorier i {market}",
                 options=categories,
                 default=default_cats,
-                key=f"cat_{market}",
-                help=f"Välj kategorier från {market}"
+                key=f"cat_{market}"
             )
             selected_categories[market] = selected_cats
             
-            # Räkna antal tickers
             for cat in selected_cats:
                 total_tickers_estimated += len(ticker_lists[market][cat])
     
     if total_tickers_estimated > 0:
-        st.sidebar.info(f"📊 Kommer scanna ~{total_tickers_estimated} aktier")
+        st.sidebar.info(f"📊 Totalt ~{total_tickers_estimated} aktier valda")
     
     st.sidebar.markdown("---")
     
-    # --- PRISFILTER ---
-    st.sidebar.subheader("💰 Pris")
-    price_range = st.sidebar.slider(
-        "Prisintervall (alla valutor)", 
-        min_value=0, 
-        max_value=2000, 
-        value=(0, 2000), 
-        step=10,
-        help="Jämför SEK, CAD, USD direkt (1:1 för enkelhetens skull)"
-    )
+    # --- PRIS & FILTER ---
+    price_range = st.sidebar.slider("Prisintervall (Nominellt)", 0, 2000, (0, 2000), 10)
     
-    # --- VÄRDERINGSFILTER ---
-    st.sidebar.subheader("📊 Värdering")
     use_pe_filter = st.sidebar.checkbox("Använd P/E-filter")
-    if use_pe_filter:
-        pe_range = st.sidebar.slider("P/E-tal", 0.0, 50.0, (0.0, 50.0), 1.0)
-    else:
-        pe_range = None
+    pe_range = st.sidebar.slider("P/E-tal", 0.0, 50.0, (0.0, 50.0)) if use_pe_filter else None
     
     use_pb_filter = st.sidebar.checkbox("Använd P/B-filter")
-    if use_pb_filter:
-        pb_range = st.sidebar.slider("P/B-tal", 0.0, 10.0, (0.0, 10.0), 0.5)
-    else:
-        pb_range = None
+    pb_range = st.sidebar.slider("P/B-tal", 0.0, 10.0, (0.0, 10.0)) if use_pb_filter else None
     
-    # --- HÄNDELSER ---
-    st.sidebar.subheader("📰 Händelser (Press Releases)")
-    check_vinstvarning = st.sidebar.checkbox(
-        "⚠️ Vinstvarning / Profit Warning", 
-        help="Söker i Yahoo Finance press releases efter vinstvarningar"
-    )
-    check_rapport = st.sidebar.checkbox(
-        "📊 Rapport släppt/på väg (30 dagar)",
-        help="Söker efter kvartalsrapporter i Yahoo Finance"
-    )
-    check_insider = st.sidebar.checkbox(
-        "👤 Insidertransaktioner",
-        help="Söker efter insiderköp och insiderförsäljning"
-    )
-    check_ny_vd = st.sidebar.checkbox(
-        "🎯 Ny VD/ledning",
-        help="Söker efter VD-byten och ledningsförändringar"
-    )
+    st.sidebar.subheader("📰 Händelser")
+    check_vinstvarning = st.sidebar.checkbox("⚠️ Vinstvarning")
+    check_rapport = st.sidebar.checkbox("📊 Rapport (30 dagar)")
+    check_insider = st.sidebar.checkbox("👤 Insider")
+    check_ny_vd = st.sidebar.checkbox("🎯 Ny VD")
     
-    # --- TEKNISK TREND ---
     st.sidebar.subheader("📈 Teknisk Trend")
     streak_filter = st.sidebar.slider("Trend (Dagar upp/ner)", -15, 15, (-15, 15))
     
@@ -394,17 +354,15 @@ def main():
     # --- SÖKLOGIK ---
     if start_btn:
         if not selected_markets:
-            st.warning("⚠️ Välj minst en marknad att scanna!")
+            st.warning("⚠️ Välj minst en marknad!")
             return
         
-        # Bygg lista över alla tickers
         all_tickers = []
         for market in selected_markets:
             if market in selected_categories:
                 for category in selected_categories[market]:
                     all_tickers.extend(ticker_lists[market][category])
         
-        # Ta bort duplicates
         all_tickers = list(set(all_tickers))
         total = len(all_tickers)
         
@@ -412,124 +370,53 @@ def main():
             st.warning("⚠️ Inga kategorier valda!")
             return
         
-        st.info(f"🚀 Skannar {total} aktier med batch-download (snabbt!)...")
+        st.info(f"🚀 Skannar {total} aktier...")
         
-        # Dela upp i batches
         BATCH_SIZE = 50
         batches = [all_tickers[i:i + BATCH_SIZE] for i in range(0, total, BATCH_SIZE)]
         num_batches = len(batches)
         
-        st.write(f"📦 Delar upp i {num_batches} batches (max {BATCH_SIZE} aktier/batch)")
-        
-        # Progress tracking
         progress_bar = st.progress(0)
         status_text = st.empty()
         results_container = st.empty()
-        
         all_results = []
         start_time = time.time()
         
-        # Processa varje batch
         for batch_idx, batch in enumerate(batches, 1):
-            status_text.text(f"⚡ Processar batch {batch_idx}/{num_batches} ({len(batch)} aktier)...")
+            status_text.text(f"⚡ Processar batch {batch_idx}/{num_batches} ({len(batch)} st)...")
             progress_bar.progress(batch_idx / num_batches)
             
-            # Download data för denna batch
             batch_data = download_batch_data(batch, batch_idx, num_batches)
             
             if batch_data is not None:
-                # Processa resultaten
                 batch_results = process_batch_results(
-                    batch_data, 
-                    batch,
-                    price_range,
-                    pe_range,
-                    pb_range,
-                    use_pe_filter,
-                    use_pb_filter,
-                    streak_filter,
-                    check_vinstvarning,
-                    check_rapport,
-                    check_insider,
-                    check_ny_vd
+                    batch_data, batch, price_range, pe_range, pb_range,
+                    use_pe_filter, use_pb_filter, streak_filter,
+                    check_vinstvarning, check_rapport, check_insider, check_ny_vd
                 )
                 all_results.extend(batch_results)
                 
-                # Visa preliminära resultat
                 if all_results:
-                    results_container.success(f"✅ Hittills: {len(all_results)} matchande aktier")
+                    results_container.success(f"✅ Hittills: {len(all_results)} matchande")
         
         status_text.empty()
         progress_bar.empty()
         results_container.empty()
-        
         elapsed_time = time.time() - start_time
         
-        # --- VISA RESULTAT ---
         if len(all_results) > 0:
-            # Begränsa till max 100 resultat
             display_results = all_results[:100]
-            
-            st.success(f"✅ Hittade {len(all_results)} aktier som matchar på {elapsed_time:.1f} sekunder!")
-            
-            if len(all_results) > 100:
-                st.info(f"📌 Visar topp 100 av {len(all_results)} resultat")
+            st.success(f"✅ Klar! Hittade {len(all_results)} aktier på {elapsed_time:.1f}s")
             
             df_results = pd.DataFrame(display_results)
+            st.dataframe(df_results, use_container_width=True, height=600)
             
-            # Visa statistik
-            col1, col2, col3, col4 = st.columns(4)
-            with col1:
-                st.metric("Antal aktier", len(all_results))
-            with col2:
-                markets_found = df_results['Marknad'].nunique()
-                st.metric("Marknader", markets_found)
-            with col3:
-                positive_trend = len([r for r in all_results if r['Trend (Dagar)'] > 0])
-                st.metric("Positiv trend", f"{positive_trend}")
-            with col4:
-                st.metric("Scanningstid", f"{elapsed_time:.1f}s")
-            
-            # Visa tabell
-            st.dataframe(
-                df_results,
-                use_container_width=True,
-                height=600
-            )
-            
-            # Export
             csv = df_results.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                label="📥 Ladda ner resultat (CSV)",
-                data=csv,
-                file_name=f"global_screening_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                mime="text/csv",
-            )
+            st.download_button("📥 Ladda ner CSV", csv, "resultat.csv", "text/csv")
         else:
-            st.warning("⚠️ Inga aktier matchade dina filter. Prova att justera kriterierna.")
-    
+            st.warning("⚠️ Inga aktier matchade dina filter.")
     else:
-        st.info("👈 Justera filtren till vänster och tryck på 'Skanna Marknaden'")
-        
-        # Visa info om marknader
-        st.markdown("### 📊 Tillgängliga Marknader")
-        
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            st.markdown("#### Sverige 🇸🇪")
-            for cat, tickers in ticker_lists["Sverige 🇸🇪"].items():
-                st.write(f"• {cat}: {len(tickers)} aktier")
-        
-        with col2:
-            st.markdown("#### Kanada 🇨🇦")
-            for cat, tickers in ticker_lists["Kanada 🇨🇦"].items():
-                st.write(f"• {cat}: {len(tickers)} aktier")
-        
-        with col3:
-            st.markdown("#### USA 🇺🇸")
-            for cat, tickers in ticker_lists["USA 🇺🇸"].items():
-                st.write(f"• {cat}: {len(tickers)} aktier")
+        st.info("👈 Välj marknad och klicka på 'Skanna Marknaden'")
 
 if __name__ == "__main__":
     main()

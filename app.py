@@ -2448,4 +2448,8 @@ def show_screener():
     
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        st.error(f"Ett fel uppstod: {str(e)}")
+        st.exception(e)

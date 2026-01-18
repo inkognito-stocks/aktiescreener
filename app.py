@@ -1901,7 +1901,7 @@ def main():
             st.title("🌍 Global AktieScreener")
         with col_info:
             st.markdown("<br>", unsafe_allow_html=True)
-            st.caption("Sverige • Kanada • USA")
+            st.caption("Sverige 🇸🇪 • Kanada 🇨🇦 • USA 🇺🇸")
         
         st.markdown("---")
         

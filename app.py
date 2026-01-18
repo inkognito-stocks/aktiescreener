@@ -180,6 +180,13 @@ def check_cision_news(ticker_symbol, keywords_list, days_back=30):
                     continue
                 title = title_elem.get_text(strip=True).lower()
                 
+                # Hitta även beskrivning/summary om den finns
+                summary_elem = release.find('p') or release.find('div', class_='description')
+                summary = summary_elem.get_text(strip=True).lower() if summary_elem else ""
+                
+                # Kombinera titel + summary för sökning
+                search_text = f"{title} {summary}"
+                
                 # Hitta datum
                 date_elem = release.find('time') or release.find('span', class_='date')
                 if date_elem:
@@ -199,9 +206,9 @@ def check_cision_news(ticker_symbol, keywords_list, days_back=30):
                 else:
                     continue
                 
-                # Sök efter nyckelord
+                # Sök efter nyckelord i både titel OCH summary
                 for keyword in keywords_list:
-                    if keyword.lower() in title:
+                    if keyword.lower() in search_text:
                         link_elem = release.find('a')
                         link = link_elem.get('href', '') if link_elem else ''
                         if link and not link.startswith('http'):
@@ -318,12 +325,15 @@ def process_batch_results(data, tickers_in_batch, price_range, pe_range, pb_rang
                 if is_swedish:
                     warning_keywords = [
                         'vinstvarning', 'sänker prognos', 'nedjusterar', 'varning',
-                        'nedrevidera', 'justerar ned', 'sänker'
+                        'nedrevidera', 'justerar ned', 'sänker',
+                        'resultatuppdatering', 'reviderad prognos', 'omvärderar',
+                        'försämrad', 'svagare', 'lägre än väntat', 'utmaning'
                     ]
                 else:
                     warning_keywords = [
                         'profit warning', 'lowers guidance', 'downgrade', 
-                        'misses', 'weak results', 'below expectations'
+                        'misses', 'weak results', 'below expectations',
+                        'result update', 'revised guidance', 'challenges'
                     ]
                 
                 news_hit = news_checker(ticker, warning_keywords, days_back=30)

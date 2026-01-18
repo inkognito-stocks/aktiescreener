@@ -872,7 +872,7 @@ def check_earnings_date(ticker_symbol, days_range=30):
     except:
         return None
 
-def process_batch_results(data, tickers_in_batch, price_range, streak_filter, 
+def process_batch_results(data, tickers_in_batch, market_cap_range, streak_filter, 
                           check_vinstvarning, check_rapport, check_insider, check_ny_vd, 
                           use_price_change, price_change_period, price_change_range, 
                           volume_threshold, development_period):
@@ -899,12 +899,26 @@ def process_batch_results(data, tickers_in_batch, price_range, streak_filter,
             if len(closes) < 2:
                 continue
             
-            # Senaste pris
+            # Senaste pris (behålls för visning)
             price = float(closes.iloc[-1])
             
-            # Pris-filter
-            if not (price_range[0] <= price <= price_range[1]):
-                continue
+            # Hämta börsvärde (market cap) från yfinance info
+            market_cap = None
+            try:
+                ticker_obj = yf.Ticker(ticker)
+                info = ticker_obj.info
+                market_cap = info.get('marketCap', None)
+            except Exception:
+                pass
+            
+            # Börsvärde-filter (om market cap är tillgängligt och filter är aktivt)
+            if market_cap_range and len(market_cap_range) == 2:
+                if market_cap is None:
+                    # Om börsvärde saknas och filter är aktivt, hoppa över (eller tillåt om båda är 0-1000)
+                    if market_cap_range[0] > 0 or market_cap_range[1] < 1000_000_000_000:
+                        continue
+                elif not (market_cap_range[0] <= market_cap <= market_cap_range[1]):
+                    continue
             
             # Beräkna streak
             streak = calculate_streak(closes)
@@ -1173,6 +1187,367 @@ def process_batch_results(data, tickers_in_batch, price_range, streak_filter,
             continue
     
     return results
+
+# --- RÅVAROR, OLJA & KRYPTO ---
+
+@st.cache_data(ttl=300)  # Cache i 5 minuter
+def get_commodities_data():
+    """Hämtar priser för råvaror (koppar, guld, silver, etc.)"""
+    commodities = {
+        "Guld": "GC=F",  # Gold Futures
+        "Silver": "SI=F",  # Silver Futures
+        "Koppar": "HG=F",  # Copper Futures
+        "Platina": "PL=F",  # Platinum Futures
+        "Palladium": "PA=F",  # Palladium Futures
+        "Aluminium": "ALI=F",  # Aluminum Futures
+        "Zink": "ZN=F",  # Zinc Futures
+        "Nickel": "NI=F",  # Nickel Futures
+        "Vete": "ZW=F",  # Wheat Futures
+        "Majs": "ZC=F",  # Corn Futures
+        "Sojabönor": "ZS=F",  # Soybean Futures
+        "Kaffe": "KC=F",  # Coffee Futures
+        "Socker": "SB=F",  # Sugar Futures
+        "Kakao": "CC=F",  # Cocoa Futures
+        "Bomull": "CT=F",  # Cotton Futures
+    }
+    
+    results = []
+    for name, ticker in commodities.items():
+        try:
+            ticker_obj = yf.Ticker(ticker)
+            info = ticker_obj.history(period="2d")
+            if not info.empty:
+                current_price = info['Close'].iloc[-1]
+                prev_price = info['Close'].iloc[-2] if len(info) > 1 else current_price
+                change_pct = ((current_price - prev_price) / prev_price) * 100
+                
+                results.append({
+                    "Råvara": name,
+                    "Pris": f"${current_price:.2f}",
+                    "Förändring (%)": f"{change_pct:+.2f}%",
+                    "Ticker": ticker,
+                    "URL": f"https://finance.yahoo.com/quote/{ticker}"
+                })
+        except Exception as e:
+            continue
+    
+    return results
+
+@st.cache_data(ttl=300)  # Cache i 5 minuter
+def get_oil_data():
+    """Hämtar oljepriser"""
+    oil_types = {
+        "WTI Crude": "CL=F",  # WTI Crude Oil
+        "Brent Crude": "BZ=F",  # Brent Crude Oil
+        "Heating Oil": "HO=F",  # Heating Oil
+        "RBOB Gasoline": "RB=F",  # RBOB Gasoline
+        "Natural Gas": "NG=F",  # Natural Gas
+    }
+    
+    results = []
+    for name, ticker in oil_types.items():
+        try:
+            ticker_obj = yf.Ticker(ticker)
+            info = ticker_obj.history(period="2d")
+            if not info.empty:
+                current_price = info['Close'].iloc[-1]
+                prev_price = info['Close'].iloc[-2] if len(info) > 1 else current_price
+                change_pct = ((current_price - prev_price) / prev_price) * 100
+                
+                results.append({
+                    "Oljetyp": name,
+                    "Pris": f"${current_price:.2f}",
+                    "Förändring (%)": f"{change_pct:+.2f}%",
+                    "Ticker": ticker,
+                    "URL": f"https://finance.yahoo.com/quote/{ticker}"
+                })
+        except Exception as e:
+            continue
+    
+    return results
+
+@st.cache_data(ttl=300)  # Cache i 5 minuter
+def get_crypto_data():
+    """Hämtar kryptopriser"""
+    cryptocurrencies = {
+        "Bitcoin": "BTC-USD",
+        "Ethereum": "ETH-USD",
+        "Binance Coin": "BNB-USD",
+        "Solana": "SOL-USD",
+        "Cardano": "ADA-USD",
+        "XRP": "XRP-USD",
+        "Polkadot": "DOT-USD",
+        "Dogecoin": "DOGE-USD",
+        "Avalanche": "AVAX-USD",
+        "Chainlink": "LINK-USD",
+        "Polygon": "MATIC-USD",
+        "Litecoin": "LTC-USD",
+        "Bitcoin Cash": "BCH-USD",
+        "Uniswap": "UNI-USD",
+        "Ethereum Classic": "ETC-USD",
+    }
+    
+    results = []
+    for name, ticker in cryptocurrencies.items():
+        try:
+            ticker_obj = yf.Ticker(ticker)
+            info = ticker_obj.history(period="2d")
+            if not info.empty:
+                current_price = info['Close'].iloc[-1]
+                prev_price = info['Close'].iloc[-2] if len(info) > 1 else current_price
+                change_pct = ((current_price - prev_price) / prev_price) * 100
+                
+                # Formatera pris beroende på storlek
+                if current_price < 1:
+                    price_str = f"${current_price:.4f}"
+                elif current_price < 1000:
+                    price_str = f"${current_price:.2f}"
+                else:
+                    price_str = f"${current_price:,.2f}"
+                
+                results.append({
+                    "Krypto": name,
+                    "Pris": price_str,
+                    "Förändring (%)": f"{change_pct:+.2f}%",
+                    "Ticker": ticker,
+                    "URL": f"https://finance.yahoo.com/quote/{ticker}"
+                })
+        except Exception as e:
+            continue
+    
+    return results
+
+@st.cache_data(ttl=600)  # Cache i 10 minuter
+def get_commodities_news():
+    """Hämtar nyheter om råvaror"""
+    tickers = ["GC=F", "SI=F", "HG=F", "PL=F", "PA=F"]
+    
+    all_news = []
+    seen_titles = set()  # För att undvika duplicater
+    
+    for ticker in tickers:
+        try:
+            ticker_obj = yf.Ticker(ticker)
+            news = ticker_obj.news[:5]  # Hämta top 5 nyheter
+            for article in news:
+                title = article.get('title', '')
+                if title and title not in seen_titles:
+                    seen_titles.add(title)
+                    all_news.append(article)
+        except Exception:
+            continue
+    
+    # Sortera efter datum (nyaste först)
+    all_news.sort(key=lambda x: x.get('providerPublishTime', 0), reverse=True)
+    return all_news[:10]  # Returnera top 10
+
+@st.cache_data(ttl=600)  # Cache i 10 minuter
+def get_oil_news():
+    """Hämtar nyheter om olja"""
+    tickers = ["CL=F", "BZ=F", "NG=F"]
+    
+    all_news = []
+    seen_titles = set()  # För att undvika duplicater
+    
+    for ticker in tickers:
+        try:
+            ticker_obj = yf.Ticker(ticker)
+            news = ticker_obj.news[:5]
+            for article in news:
+                title = article.get('title', '')
+                if title and title not in seen_titles:
+                    seen_titles.add(title)
+                    all_news.append(article)
+        except Exception:
+            continue
+    
+    all_news.sort(key=lambda x: x.get('providerPublishTime', 0), reverse=True)
+    return all_news[:10]
+
+@st.cache_data(ttl=600)  # Cache i 10 minuter
+def get_crypto_news():
+    """Hämtar nyheter om krypto"""
+    tickers = ["BTC-USD", "ETH-USD", "BNB-USD", "SOL-USD"]
+    
+    all_news = []
+    seen_titles = set()  # För att undvika duplicater
+    
+    for ticker in tickers:
+        try:
+            ticker_obj = yf.Ticker(ticker)
+            news = ticker_obj.news[:5]
+            for article in news:
+                title = article.get('title', '')
+                if title and title not in seen_titles:
+                    seen_titles.add(title)
+                    all_news.append(article)
+        except Exception:
+            continue
+    
+    all_news.sort(key=lambda x: x.get('providerPublishTime', 0), reverse=True)
+    return all_news[:10]
+
+def display_commodities():
+    """Visar råvaror-priser och nyheter"""
+    st.header("📦 Råvaror")
+    
+    # Hämta data
+    with st.spinner("Hämtar råvaror-priser..."):
+        commodities_data = get_commodities_data()
+    
+    if commodities_data:
+        # Visa priser i en tabell
+        df = pd.DataFrame(commodities_data)
+        
+        # Färgkoda förändringar
+        def color_change(val):
+            if isinstance(val, str) and '%' in val:
+                if '+' in val:
+                    return 'background-color: #d4edda; color: #155724; font-weight: bold;'
+                elif '-' in val:
+                    return 'background-color: #f8d7da; color: #721c24; font-weight: bold;'
+            return ''
+        
+        styled_df = df.style.applymap(color_change, subset=['Förändring (%)'])
+        
+        # Lägg till länkar
+        column_config = {}
+        if 'URL' in df.columns:
+            try:
+                df['🔗'] = df['URL']
+                column_config['🔗'] = st.column_config.LinkColumn(
+                    "Länk",
+                    help="Öppna på Yahoo Finance",
+                    display_text="Öppna"
+                )
+                df = df.drop(columns=['URL', 'Ticker'])
+            except AttributeError:
+                df['🔗 Länk'] = df.apply(
+                    lambda row: f"[Öppna]({row['URL']})",
+                    axis=1
+                )
+                df = df.drop(columns=['URL', 'Ticker'])
+        
+        st.dataframe(styled_df, use_container_width=True, height=400, column_config=column_config if column_config else None)
+        
+        # Visa nyheter
+        st.markdown("### 📰 Senaste nyheterna om råvaror")
+        with st.spinner("Hämtar nyheter..."):
+            news = get_commodities_news()
+        
+        if news:
+            for article in news[:5]:
+                pub_time = datetime.fromtimestamp(article.get('providerPublishTime', 0))
+                st.markdown(f"""
+                **{article.get('title', 'Ingen titel')}**
+                - *{article.get('publisher', 'Okänd källa')}* - {pub_time.strftime('%Y-%m-%d %H:%M')}
+                - [Läs mer]({article.get('link', '#')})
+                """)
+                st.markdown("---")
+        else:
+            st.info("Inga nyheter hittades.")
+    else:
+        st.warning("Kunde inte hämta råvaror-data.")
+
+def display_oil():
+    """Visar oljepriser och nyheter"""
+    st.header("🛢️ Olja & Energi")
+    
+    with st.spinner("Hämtar oljepriser..."):
+        oil_data = get_oil_data()
+    
+    if oil_data:
+        df = pd.DataFrame(oil_data)
+        
+        def color_change(val):
+            if isinstance(val, str) and '%' in val:
+                if '+' in val:
+                    return 'background-color: #d4edda; color: #155724; font-weight: bold;'
+                elif '-' in val:
+                    return 'background-color: #f8d7da; color: #721c24; font-weight: bold;'
+            return ''
+        
+        styled_df = df.style.applymap(color_change, subset=['Förändring (%)'])
+        
+        column_config = {}
+        if 'URL' in df.columns:
+            try:
+                df['🔗'] = df['URL']
+                column_config['🔗'] = st.column_config.LinkColumn("Länk", help="Öppna på Yahoo Finance", display_text="Öppna")
+                df = df.drop(columns=['URL', 'Ticker'])
+            except AttributeError:
+                df['🔗 Länk'] = df.apply(lambda row: f"[Öppna]({row['URL']})", axis=1)
+                df = df.drop(columns=['URL', 'Ticker'])
+        
+        st.dataframe(styled_df, use_container_width=True, height=300, column_config=column_config if column_config else None)
+        
+        st.markdown("### 📰 Senaste nyheterna om olja")
+        with st.spinner("Hämtar nyheter..."):
+            news = get_oil_news()
+        
+        if news:
+            for article in news[:5]:
+                pub_time = datetime.fromtimestamp(article.get('providerPublishTime', 0))
+                st.markdown(f"""
+                **{article.get('title', 'Ingen titel')}**
+                - *{article.get('publisher', 'Okänd källa')}* - {pub_time.strftime('%Y-%m-%d %H:%M')}
+                - [Läs mer]({article.get('link', '#')})
+                """)
+                st.markdown("---")
+        else:
+            st.info("Inga nyheter hittades.")
+    else:
+        st.warning("Kunde inte hämta oljepriser.")
+
+def display_crypto():
+    """Visar kryptopriser och nyheter"""
+    st.header("₿ Krypto")
+    
+    with st.spinner("Hämtar kryptopriser..."):
+        crypto_data = get_crypto_data()
+    
+    if crypto_data:
+        df = pd.DataFrame(crypto_data)
+        
+        def color_change(val):
+            if isinstance(val, str) and '%' in val:
+                if '+' in val:
+                    return 'background-color: #d4edda; color: #155724; font-weight: bold;'
+                elif '-' in val:
+                    return 'background-color: #f8d7da; color: #721c24; font-weight: bold;'
+            return ''
+        
+        styled_df = df.style.applymap(color_change, subset=['Förändring (%)'])
+        
+        column_config = {}
+        if 'URL' in df.columns:
+            try:
+                df['🔗'] = df['URL']
+                column_config['🔗'] = st.column_config.LinkColumn("Länk", help="Öppna på Yahoo Finance", display_text="Öppna")
+                df = df.drop(columns=['URL', 'Ticker'])
+            except AttributeError:
+                df['🔗 Länk'] = df.apply(lambda row: f"[Öppna]({row['URL']})", axis=1)
+                df = df.drop(columns=['URL', 'Ticker'])
+        
+        st.dataframe(styled_df, use_container_width=True, height=500, column_config=column_config if column_config else None)
+        
+        st.markdown("### 📰 Senaste nyheterna om krypto")
+        with st.spinner("Hämtar nyheter..."):
+            news = get_crypto_news()
+        
+        if news:
+            for article in news[:5]:
+                pub_time = datetime.fromtimestamp(article.get('providerPublishTime', 0))
+                st.markdown(f"""
+                **{article.get('title', 'Ingen titel')}**
+                - *{article.get('publisher', 'Okänd källa')}* - {pub_time.strftime('%Y-%m-%d %H:%M')}
+                - [Läs mer]({article.get('link', '#')})
+                """)
+                st.markdown("---")
+        else:
+            st.info("Inga nyheter hittades.")
+    else:
+        st.warning("Kunde inte hämta kryptopriser.")
 
 # --- TOP VINNARE/FÖRLORARE ---
 
@@ -1479,24 +1854,65 @@ def main():
         # Om något går fel, fortsätt utan banner
         pass
     
-    # Huvudrubrik med kompakt layout
-    col_title, col_info = st.columns([3, 1])
-    with col_title:
-        st.title("🌍 Global AktieScreener")
-    with col_info:
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.caption("Sverige • Kanada • USA")
+    # Branschknappar/flikar ovanför huvudrubriken
+    st.markdown("### Branscher")
+    
+    # Initiera session_state för vald bransch
+    if 'selected_industry' not in st.session_state:
+        st.session_state.selected_industry = 'stocks'
+    
+    industry_cols = st.columns(4)
+    
+    with industry_cols[0]:
+        if st.button("📦 Råvaror", use_container_width=True, key="commodities_btn", 
+                     type="primary" if st.session_state.selected_industry == 'commodities' else "secondary"):
+            st.session_state.selected_industry = 'commodities'
+            st.rerun()
+    with industry_cols[1]:
+        if st.button("🛢️ Olja", use_container_width=True, key="oil_btn",
+                     type="primary" if st.session_state.selected_industry == 'oil' else "secondary"):
+            st.session_state.selected_industry = 'oil'
+            st.rerun()
+    with industry_cols[2]:
+        if st.button("₿ Krypto", use_container_width=True, key="crypto_btn",
+                     type="primary" if st.session_state.selected_industry == 'crypto' else "secondary"):
+            st.session_state.selected_industry = 'crypto'
+            st.rerun()
+    with industry_cols[3]:
+        if st.button("📈 Aktier", use_container_width=True, key="stocks_btn",
+                     type="primary" if st.session_state.selected_industry == 'stocks' else "secondary"):
+            st.session_state.selected_industry = 'stocks'
+            st.rerun()
     
     st.markdown("---")
     
-    # Skapa flikar
-    tab1, tab2 = st.tabs(["🔍 Screener", "🏆 Vinnare/Förlorare Globalt"])
-    
-    with tab1:
-        show_screener()
-    
-    with tab2:
-        display_winners_losers()
+    # Visa rätt innehåll baserat på vald bransch
+    if st.session_state.selected_industry == 'commodities':
+        display_commodities()
+    elif st.session_state.selected_industry == 'oil':
+        display_oil()
+    elif st.session_state.selected_industry == 'crypto':
+        display_crypto()
+    else:
+        # Standard: Visa aktier
+        # Huvudrubrik med kompakt layout
+        col_title, col_info = st.columns([3, 1])
+        with col_title:
+            st.title("🌍 Global AktieScreener")
+        with col_info:
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.caption("Sverige • Kanada • USA")
+        
+        st.markdown("---")
+        
+        # Skapa flikar
+        tab1, tab2 = st.tabs(["🔍 Screener", "🏆 Vinnare/Förlorare Globalt"])
+        
+        with tab1:
+            show_screener()
+        
+        with tab2:
+            display_winners_losers()
 
 def show_screener():
     """Huvudfunktion för screener-fliken"""
@@ -1536,54 +1952,61 @@ def show_screener():
     
     st.sidebar.markdown("---")
     
-    # --- PRIS & FILTER ---
+    # --- BÖRSVÄRDE & FILTER ---
     st.sidebar.markdown("### 💰 Filter")
     
-    # Initiera session_state för prisintervall
-    if 'price_min' not in st.session_state:
-        st.session_state.price_min = 0
-    if 'price_max' not in st.session_state:
-        st.session_state.price_max = 2000
+    # Initiera session_state för börsvärde-intervall (i miljarder USD)
+    if 'market_cap_min' not in st.session_state:
+        st.session_state.market_cap_min = 0
+    if 'market_cap_max' not in st.session_state:
+        st.session_state.market_cap_max = 1000  # 1000 miljarder = 1 triljon
     
     # Skapa två kolumner för min och max input
-    col_price_min, col_price_max = st.sidebar.columns(2)
+    col_mcap_min, col_mcap_max = st.sidebar.columns(2)
     
-    with col_price_min:
-        price_min_input = st.number_input(
-            "Min pris",
-            min_value=0,
-            max_value=2000,
-            value=st.session_state.price_min,
-            step=10,
-            key="price_min_input",
-            help="Skriv in minsta pris (t.ex. 10 för 10 kr)"
+    with col_mcap_min:
+        market_cap_min_input = st.number_input(
+            "Min börsvärde (M)",
+            min_value=0.0,
+            max_value=1000.0,
+            value=st.session_state.market_cap_min,
+            step=10.0,
+            key="market_cap_min_input",
+            help="Minsta börsvärde i miljarder USD (t.ex. 1 = $1B, 100 = $100B)"
         )
-        st.session_state.price_min = price_min_input
+        st.session_state.market_cap_min = market_cap_min_input
     
-    with col_price_max:
-        price_max_input = st.number_input(
-            "Max pris",
-            min_value=0,
-            max_value=2000,
-            value=st.session_state.price_max,
-            step=10,
-            key="price_max_input",
-            help="Skriv in största pris (t.ex. 100 för 100 kr)"
+    with col_mcap_max:
+        market_cap_max_input = st.number_input(
+            "Max börsvärde (M)",
+            min_value=0.0,
+            max_value=1000.0,
+            value=st.session_state.market_cap_max,
+            step=10.0,
+            key="market_cap_max_input",
+            help="Största börsvärde i miljarder USD (t.ex. 100 = $100B, 1000 = $1T)"
         )
-        st.session_state.price_max = price_max_input
+        st.session_state.market_cap_max = market_cap_max_input
     
-    price_range = st.sidebar.slider(
-        "Prisintervall (Nominellt)", 
-        0, 2000, 
-        (st.session_state.price_min, st.session_state.price_max), 
-        10,
-        key="price_range_slider",
-        help="Dra slidern eller använd textfälten ovanför för att ange prisintervall. Exempel: 10-100 kr för att hitta aktier mellan 10 och 100 kr."
+    # Konvertera till faktiska värden (miljarder -> faktiskt värde)
+    market_cap_min_value = st.session_state.market_cap_min * 1_000_000_000
+    market_cap_max_value = st.session_state.market_cap_max * 1_000_000_000
+    
+    market_cap_range = st.sidebar.slider(
+        "Börsvärde-intervall (Miljarder USD)", 
+        0.0, 1000.0, 
+        (st.session_state.market_cap_min, st.session_state.market_cap_max), 
+        10.0,
+        key="market_cap_range_slider",
+        help="Dra slidern eller använd textfälten ovanför för att ange börsvärde-intervall. Exempel: 1-100 för att hitta aktier med börsvärde mellan $1B och $100B."
     )
     
     # Uppdatera session_state när slidern ändras
-    st.session_state.price_min = price_range[0]
-    st.session_state.price_max = price_range[1]
+    st.session_state.market_cap_min = market_cap_range[0]
+    st.session_state.market_cap_max = market_cap_range[1]
+    
+    # Konvertera till faktiska värden för filtrering
+    market_cap_range_values = (market_cap_range[0] * 1_000_000_000, market_cap_range[1] * 1_000_000_000)
     
     st.sidebar.markdown("---")
     
@@ -1842,7 +2265,7 @@ def show_screener():
             
             if batch_data is not None:
                 batch_results = process_batch_results(
-                    batch_data, batch, price_range, streak_filter,
+                    batch_data, batch, market_cap_range_values, streak_filter,
                     check_vinstvarning, check_rapport, check_insider, check_ny_vd,
                     use_price_change, price_change_period, price_change_range,
                     volume_threshold, development_period

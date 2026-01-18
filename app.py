@@ -327,7 +327,8 @@ def check_earnings_date(ticker_symbol, days_range=30):
 
 def process_batch_results(data, tickers_in_batch, price_range, pe_range, pb_range, 
                           use_pe, use_pb, streak_filter, check_vinstvarning, check_rapport,
-                          check_insider, check_ny_vd):
+                          check_insider, check_ny_vd, use_price_change, price_change_period, 
+                          price_change_range):
     """
     Processar resultatet från en batch-download
     """
@@ -365,6 +366,32 @@ def process_batch_results(data, tickers_in_batch, price_range, pe_range, pb_rang
             min_streak, max_streak = streak_filter
             if not (min_streak <= streak <= max_streak):
                 continue
+            
+            # Prisförändring-filter
+            price_change_pct = None
+            if use_price_change:
+                # Bestäm hur många dagar tillbaka baserat på period
+                period_map = {
+                    "1 dag": 1,
+                    "1 vecka": 5,
+                    "1 månad": 20,
+                    "3 månader": 60
+                }
+                days_back = period_map.get(price_change_period, 1)
+                
+                # Beräkna prisförändring
+                if len(closes) > days_back:
+                    old_price = float(closes.iloc[-days_back-1])
+                    current_price = float(closes.iloc[-1])
+                    price_change_pct = ((current_price - old_price) / old_price) * 100
+                    
+                    # Filtrera baserat på användarens intervall
+                    min_change, max_change = price_change_range
+                    if not (min_change <= price_change_pct <= max_change):
+                        continue
+                else:
+                    # Inte tillräckligt med historik, skippa denna aktie
+                    continue
             
             # Hämta valuation metrics (om valt)
             pe, pb = None, None
@@ -465,15 +492,23 @@ def process_batch_results(data, tickers_in_batch, price_range, pe_range, pb_rang
             
             news_text = " | ".join(news_hits) if news_hits else "Ingen händelse"
             
-            results.append({
+            # Bygg resultat-dictionary
+            result_dict = {
                 "Ticker": ticker,
                 "Marknad": market,
                 f"Pris ({currency})": round(price, 2),
                 "P/E": round(pe, 2) if pe else "N/A",
                 "P/B": round(pb, 2) if pb else "N/A",
                 "Trend (Dagar)": streak,
-                "Händelser": news_text
-            })
+            }
+            
+            # Lägg till prisförändring om filtret är aktivt
+            if use_price_change and price_change_pct is not None:
+                result_dict[f"Förändring ({price_change_period})"] = f"{price_change_pct:+.2f}%"
+            
+            result_dict["Händelser"] = news_text
+            
+            results.append(result_dict)
             
         except Exception:
             continue
@@ -560,6 +595,27 @@ def main():
     st.sidebar.subheader("📈 Teknisk Trend")
     streak_filter = st.sidebar.slider("Trend (Dagar upp/ner)", -15, 15, (-15, 15))
     
+    # Prisförändring filter
+    st.sidebar.markdown("---")
+    use_price_change = st.sidebar.checkbox("Använd prisförändring-filter")
+    
+    if use_price_change:
+        price_change_period = st.sidebar.selectbox(
+            "Tidsperiod",
+            ["1 dag", "1 vecka", "1 månad", "3 månader"],
+            help="Hur långt bakåt ska prisförändringen beräknas?"
+        )
+        
+        price_change_range = st.sidebar.slider(
+            "Prisförändring (%)",
+            -50.0, 100.0, (0.0, 20.0),
+            step=0.5,
+            help="Filtrera bolag som gått upp/ner inom detta intervall"
+        )
+    else:
+        price_change_period = None
+        price_change_range = None
+    
     st.sidebar.markdown("---")
     start_btn = st.sidebar.button("🔍 Skanna Marknaden", type="primary", use_container_width=True)
     
@@ -612,7 +668,8 @@ def main():
                 batch_results = process_batch_results(
                     batch_data, batch, price_range, pe_range, pb_range,
                     use_pe_filter, use_pb_filter, streak_filter,
-                    check_vinstvarning, check_rapport, check_insider, check_ny_vd
+                    check_vinstvarning, check_rapport, check_insider, check_ny_vd,
+                    use_price_change, price_change_period, price_change_range
                 )
                 all_results.extend(batch_results)
                 

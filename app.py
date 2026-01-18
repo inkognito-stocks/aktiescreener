@@ -5,6 +5,8 @@ from datetime import datetime, timedelta
 import time
 import requests
 from bs4 import BeautifulSoup
+import re
+from collections import Counter
 
 # --- IMPORT FRÅN MARKET_DATA.PY ---
 try:
@@ -96,6 +98,131 @@ ticker_lists = {
 
 # --- Inställningar ---
 st.set_page_config(page_title="AktieScreener Global", layout="wide")
+
+# --- REDDIT TRENDING TICKERS ---
+
+@st.cache_data(ttl=1800)  # Cache i 30 minuter
+def get_reddit_trending_tickers(limit=100):
+    """
+    Hämtar de mest diskuterade tickers från Reddit.
+    Söker i populära finans-subreddits.
+    """
+    try:
+        # Samla alla tickers från våra listor för att validera
+        all_tickers = set()
+        for market_data in ticker_lists.values():
+            for category_tickers in market_data.values():
+                # Ta bort .TO, .ST suffix för att matcha Reddit-format
+                for ticker in category_tickers:
+                    clean_ticker = ticker.replace('.TO', '').replace('.ST', '').replace('-', '')
+                    if len(clean_ticker) <= 5 and clean_ticker.isalpha():
+                        all_tickers.add(clean_ticker.upper())
+        
+        # Lägg till vanliga tickers som kan saknas
+        common_tickers = {'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NVDA', 'AMD', 'NFLX', 
+                         'DIS', 'BAC', 'JPM', 'WFC', 'GS', 'MS', 'V', 'MA', 'PYPL', 'SQ', 'COIN',
+                         'GME', 'AMC', 'BB', 'NOK', 'PLTR', 'RKT', 'CLOV', 'WISH', 'SPCE', 'SNDL'}
+        all_tickers.update(common_tickers)
+        
+        # Subreddits att söka i
+        subreddits = ['stocks', 'investing', 'wallstreetbets', 'StockMarket', 'pennystocks', 
+                     'CanadianInvestor', 'stocks', 'SecurityAnalysis']
+        
+        ticker_counts = Counter()
+        
+        for subreddit in subreddits[:3]:  # Begränsa till 3 för att undvika för många requests
+            try:
+                url = f"https://www.reddit.com/r/{subreddit}/hot.json?limit={limit//len(subreddits[:3])}"
+                headers = {'User-Agent': 'StockScreener/1.0'}
+                response = requests.get(url, headers=headers, timeout=5)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    posts = data.get('data', {}).get('children', [])
+                    
+                    for post in posts:
+                        post_data = post.get('data', {})
+                        title = post_data.get('title', '')
+                        selftext = post_data.get('selftext', '')
+                        combined_text = f"{title} {selftext}".upper()
+                        
+                        # Hitta ticker-symboler (2-5 bokstäver, stora bokstäver, omgivna av whitespace eller specialtecken)
+                        ticker_pattern = r'\$?([A-Z]{2,5})\b'
+                        found_tickers = re.findall(ticker_pattern, combined_text)
+                        
+                        for ticker in found_tickers:
+                            # Filtrera bort vanliga ord som inte är tickers
+                            if ticker not in {'THE', 'AND', 'FOR', 'ARE', 'BUT', 'NOT', 'YOU', 'ALL', 
+                                            'CAN', 'HER', 'WAS', 'ONE', 'OUR', 'OUT', 'DAY', 'GET', 
+                                            'HAS', 'HIM', 'HIS', 'HOW', 'ITS', 'MAY', 'NEW', 'NOW',
+                                            'OLD', 'SEE', 'TWO', 'WAY', 'WHO', 'BOY', 'DID', 'ITS',
+                                            'LET', 'PUT', 'SAY', 'SHE', 'TOO', 'USE', 'YEAR', 'YOUR',
+                                            'THIS', 'THAT', 'WITH', 'FROM', 'HAVE', 'WILL', 'WHAT',
+                                            'WHEN', 'WHERE', 'WHICH', 'WHILE', 'AFTER', 'BEFORE',
+                                            'ABOUT', 'ABOVE', 'ACROSS', 'AGAIN', 'AGAINST', 'ALONG',
+                                            'AMONG', 'AROUND', 'BECAUSE', 'BECOME', 'BECAME', 'BEHIND',
+                                            'BELOW', 'BESIDE', 'BETWEEN', 'BEYOND', 'DURING', 'EXCEPT',
+                                            'INSIDE', 'OUTSIDE', 'THROUGH', 'THROUGHOUT', 'TOWARD',
+                                            'UNDER', 'UNDERNEATH', 'UNLESS', 'UNTIL', 'UPON', 'WITHIN',
+                                            'WITHOUT', 'THERE', 'THESE', 'THOSE', 'THEIR', 'THEM',
+                                            'THERE', 'THESE', 'THOSE', 'THEIR', 'THEM', 'THERE', 'THESE',
+                                            'THOSE', 'THEIR', 'THEM', 'THERE', 'THESE', 'THOSE'}:
+                                if ticker in all_tickers or len(ticker) >= 3:  # Acceptera kända tickers eller 3+ bokstäver
+                                    ticker_counts[ticker] += 1
+            except Exception as e:
+                # Fortsätt med nästa subreddit om en misslyckas
+                continue
+        
+        # Returnera top 10 mest nämnda tickers
+        top_tickers = [ticker for ticker, count in ticker_counts.most_common(10) if count >= 2]
+        return top_tickers[:10]
+    
+    except Exception as e:
+        # Om Reddit-hämtning misslyckas, returnera en tom lista eller fallback-tickers
+        return []
+
+def render_trending_ticker_banner(tickers):
+    """
+    Skapar en scrolling banner med trending tickers.
+    """
+    if not tickers:
+        return
+    
+    # Skapa HTML för scrolling banner
+    ticker_html = " • ".join([f"<span style='color: #FF6B6B; font-weight: bold;'>{ticker}</span>" for ticker in tickers])
+    
+    banner_html = f"""
+    <div style="
+        background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+        padding: 12px 0;
+        margin-bottom: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        overflow: hidden;
+        position: relative;
+    ">
+        <div style="
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+            animation: scroll 30s linear infinite;
+        ">
+            <span style="margin-right: 20px; font-weight: bold; color: #FFD700;">🔥 TRENDING:</span>
+            <span style="margin-right: 50px;">{ticker_html}</span>
+            <span style="margin-right: 50px;">{ticker_html}</span>
+        </div>
+    </div>
+    
+    <style>
+        @keyframes scroll {{
+            0% {{ transform: translateX(0); }}
+            100% {{ transform: translateX(-50%); }}
+        }}
+    </style>
+    """
+    
+    st.markdown(banner_html, unsafe_allow_html=True)
 
 # --- Batch Download Functions ---
 
@@ -638,6 +765,15 @@ def process_batch_results(data, tickers_in_batch, price_range, streak_filter,
 # --- Huvudapplikation ---
 
 def main():
+    # Visa trending tickers banner
+    try:
+        trending_tickers = get_reddit_trending_tickers()
+        if trending_tickers:
+            render_trending_ticker_banner(trending_tickers)
+    except Exception as e:
+        # Om något går fel, fortsätt utan banner
+        pass
+    
     st.title("🌍 Global AktieScreener")
     st.markdown("Scanna aktier från **Sverige, Kanada och USA** (Listor från `market_data.py`)")
     

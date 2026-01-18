@@ -1317,6 +1317,8 @@ def display_winners_losers():
                     if 'Ticker' in ordered_cols:
                         ticker_idx = ordered_cols.index('Ticker')
                         ordered_cols.insert(ticker_idx + 1, '🔗')
+                    # Filtrera ordered_cols så att bara kolumner som finns i df_gainers används
+                    ordered_cols = [col for col in ordered_cols if col in df_gainers.columns]
                     df_gainers = df_gainers[ordered_cols]
                 except AttributeError:
                     df_gainers['🔗 Länk'] = df_gainers.apply(
@@ -1327,6 +1329,8 @@ def display_winners_losers():
                     if 'Ticker' in ordered_cols:
                         ticker_idx = ordered_cols.index('Ticker')
                         ordered_cols.insert(ticker_idx + 1, '🔗 Länk')
+                    # Filtrera ordered_cols så att bara kolumner som finns i df_gainers används
+                    ordered_cols = [col for col in ordered_cols if col in df_gainers.columns]
                     df_gainers = df_gainers[ordered_cols]
             
             # Färgkoda förändring
@@ -1391,6 +1395,8 @@ def display_winners_losers():
                     if 'Ticker' in ordered_cols:
                         ticker_idx = ordered_cols.index('Ticker')
                         ordered_cols.insert(ticker_idx + 1, '🔗')
+                    # Filtrera ordered_cols så att bara kolumner som finns i df_losers används
+                    ordered_cols = [col for col in ordered_cols if col in df_losers.columns]
                     df_losers = df_losers[ordered_cols]
                 except AttributeError:
                     df_losers['🔗 Länk'] = df_losers.apply(
@@ -1401,6 +1407,8 @@ def display_winners_losers():
                     if 'Ticker' in ordered_cols:
                         ticker_idx = ordered_cols.index('Ticker')
                         ordered_cols.insert(ticker_idx + 1, '🔗 Länk')
+                    # Filtrera ordered_cols så att bara kolumner som finns i df_losers används
+                    ordered_cols = [col for col in ordered_cols if col in df_losers.columns]
                     df_losers = df_losers[ordered_cols]
             
             # Färgkoda förändring
@@ -1850,8 +1858,10 @@ def show_screener():
                     ordered_cols.extend(matches)
                     existing_cols = [c for c in existing_cols if c not in matches]
             
-            # Lägg till resterande kolumner
-            ordered_cols.extend([c for c in existing_cols if c not in ordered_cols])
+            # Lägg till resterande kolumner (exkludera Ticker_URL från visningen)
+            ordered_cols.extend([c for c in existing_cols if c not in ordered_cols and c != 'Ticker_URL'])
+            # Filtrera ordered_cols så att bara kolumner som finns i df_results används
+            ordered_cols = [col for col in ordered_cols if col in df_results.columns]
             df_results = df_results[ordered_cols]
             
             # Förbered Yahoo Finance länkar för ticker-kolumnen
@@ -1901,14 +1911,17 @@ def show_screener():
                         help="Klicka för att öppna på Yahoo Finance",
                         display_text="Öppna"
                     )
-                    # Ta bort Ticker_URL från visningen
+                    # Ta bort Ticker_URL från visningen och ordered_cols
                     df_results = df_results.drop(columns=['Ticker_URL'])
-                    # Lägg till länk-kolumnen efter Ticker
+                    ordered_cols = [col for col in ordered_cols if col != 'Ticker_URL']
+                    # Uppdatera ordered_cols - lägg till länk-kolumnen efter Ticker
                     if 'Ticker' in ordered_cols:
                         ticker_idx = ordered_cols.index('Ticker')
                         ordered_cols.insert(ticker_idx + 1, '🔗')
                     else:
                         ordered_cols.insert(0, '🔗')
+                    # Filtrera ordered_cols så att bara kolumner som finns i df_results används
+                    ordered_cols = [col for col in ordered_cols if col in df_results.columns]
                     df_results = df_results[ordered_cols]
                 except AttributeError:
                     # Fallback för äldre Streamlit-versioner: Lägg till länkar i en separat kolumn
@@ -1917,11 +1930,16 @@ def show_screener():
                         axis=1
                     )
                     df_results = df_results.drop(columns=['Ticker_URL'])
+                    # Ta bort Ticker_URL från ordered_cols
+                    ordered_cols = [col for col in ordered_cols if col != 'Ticker_URL']
+                    # Uppdatera ordered_cols
                     if 'Ticker' in ordered_cols:
                         ticker_idx = ordered_cols.index('Ticker')
                         ordered_cols.insert(ticker_idx + 1, '🔗 Länk')
                     else:
                         ordered_cols.insert(0, '🔗 Länk')
+                    # Filtrera ordered_cols så att bara kolumner som finns i df_results används
+                    ordered_cols = [col for col in ordered_cols if col in df_results.columns]
                     df_results = df_results[ordered_cols]
             
             # Applicera styling på relevanta kolumner

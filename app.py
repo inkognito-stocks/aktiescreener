@@ -15,6 +15,7 @@ try:
     SE_LARGE_CAP = getattr(md, 'SE_LARGE_CAP', [])
     SE_MID_CAP = getattr(md, 'SE_MID_CAP', [])
     SE_SMALL_CAP = getattr(md, 'SE_SMALL_CAP', [])
+    SE_FIRST_NORTH = getattr(md, 'SE_FIRST_NORTH', [])
     US_ALL_STAR = getattr(md, 'US_ALL_STAR', [])
     CA_ALL_STAR = getattr(md, 'CA_ALL_STAR', [])
     # Kanada sektorer
@@ -58,10 +59,11 @@ except ImportError as e:
 # Vi bygger ihop strukturen här så att menyn i appen fungerar snyggt
 ticker_lists = {
     "Sverige 🇸🇪": {
-        "Alla bolag": SE_LARGE_CAP + SE_MID_CAP + SE_SMALL_CAP,
+        "Alla bolag": SE_LARGE_CAP + SE_MID_CAP + SE_SMALL_CAP + SE_FIRST_NORTH,
         "Large Cap": SE_LARGE_CAP,
         "Mid Cap": SE_MID_CAP,
         "Small Cap": SE_SMALL_CAP,
+        "First North": SE_FIRST_NORTH,
         "Tech & Software": SE_TECH,
         "Financials & Banks": SE_FINANCIALS,
         "Industrials & Manufacturing": SE_INDUSTRIALS,

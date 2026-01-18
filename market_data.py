@@ -108,7 +108,8 @@ SE_MID_CAP = [
     "WISC.ST", "XANO-B.ST", "XBRANE.ST", "XSPRAY.ST", "XVIVO.ST", "ZETA.ST"
 ]
 
-# --- SVERIGE SMALL CAP (Komplett lista) ---
+# --- SVERIGE SMALL CAP (Komplett lista - endast Small Cap, ej First North eller Large Cap) ---
+# Rensad från duplicater och Large Cap-bolag
 SE_SMALL_CAP = [
     "ABL.ST", "ACTI.ST", "ALIG.ST", "ALZ.ST", "ANOT.ST", "AOI.ST", "ASAP.ST",
     "ATEK.ST", "B3.ST", "BEGR.ST", "BONG.ST", "BOUV.ST", "BRIO.ST", "CANTA.ST",
@@ -117,54 +118,55 @@ SE_SMALL_CAP = [
     "EVID.ST", "FIRE.ST", "GENO.ST", "GOM.ST", "HAKN.ST", "HAV-B.ST",
     "HOSA-B.ST", "IMAGE.ST", "IMU.ST", "IRLAB-A.ST", "ISOF.ST", "JET.ST",
     "KDEV.ST", "LOGI-B.ST", "LUC.ST", "MAG.ST", "MANG.ST", "MEDVIR-B.ST",
-    "MEKO.ST", "MFN.ST", "MIDW-A.ST", "MOBA.ST", "NAXS.ST", "NETI-B.ST",
-    "NEVI.ST", "NGS.ST", "NTEK-B.ST", "ORTI-A.ST", "ORTI-B.ST", "OSCAR.ST",
-    "OVZ.ST", "PCELL.ST", "POOL-B.ST", "PREC.ST", "PREV-B.ST", "PRIF-B.ST",
-    "QAC.ST", "QIL.ST", "RAIL.ST", "RROS.ST", "SANION.ST", "SEZI.ST",
-    "SINT.ST", "SINT-PREF.ST", "SOFT.ST", "SPM.ST", "STAR-B.ST", "STRAX.ST",
-    "STU.ST", "SUA-B.ST", "SVED-B.ST", "TAGM-B.ST", "TRENT.ST", "UHR.ST",
-    "WISE.ST", "XSPRAY.ST", "ZETA.ST",
-    
-    # --- EXTRA Small Cap & Micro Cap (Faktiska nya svenska bolag) ---
-    # Tech & Software
+    "MFN.ST", "MOBA.ST", "NAXS.ST", "NETI-B.ST", "NEVI.ST", "NTEK-B.ST",
+    "ORTI-A.ST", "ORTI-B.ST", "OSCAR.ST", "OVZ.ST", "PCELL.ST", "POOL-B.ST",
+    "PREC.ST", "PREV-B.ST", "PRIF-B.ST", "QAC.ST", "QIL.ST", "RAIL.ST",
+    "RROS.ST", "SANION.ST", "SEZI.ST", "SINT.ST", "SINT-PREF.ST", "SOFT.ST",
+    "SPM.ST", "STAR-B.ST", "STRAX.ST", "STU.ST", "SUA-B.ST", "TAGM-B.ST",
+    "TRENT.ST", "UHR.ST", "WISE.ST", "XSPRAY.ST", "ZETA.ST"
+]
+
+# --- SVERIGE FIRST NORTH (Growth Market) ---
+SE_FIRST_NORTH = [
+    # Cybersecurity & Tech
+    "ADVE.ST",  # Advenica
     "ACAST.ST", "ADDTECH-B.ST", "ADVBOX.ST", "AERO.ST", "AFFY.ST", "AGROUP.ST",
     "AHLST-B.ST", "AID.ST", "AINS-B.ST", "AKAO-B.ST", "AKELD.ST", "AKSO.ST",
     "ALCA.ST", "ALTE.ST", "AMAST.ST", "APRND.ST", "ARCT.ST", "AUR.ST",
-    "AUTOLIV.ST", "AVANZA.ST", "BENGT.ST", "BTS-B.ST", "CALL.ST", "CAMX.ST",
+    "AVANZA.ST", "BENGT.ST", "BTS-B.ST", "CALL.ST", "CAMX.ST",
     
-    # Industri & Manufacturing
-    "CATE.ST", "CAT-A.ST", "CAT-B.ST", "CIBUS.ST", "CLAS-B.ST", "COIC.ST",
-    "COOR.ST", "CRED-A.ST", "CTEK.ST", "CTM.ST", "CTT.ST", "DIOS.ST",
-    "DOM.ST", "DUNI.ST", "DUST.ST", "EAST.ST", "EKTA-B.ST", "ELAN-B.ST",
-    "ELTEL.ST", "ELUX-B.ST", "ELUX-PROF-B.ST", "ENRO.ST", "EO.ST",
-    "EPI-A.ST", "EPI-B.ST", "ERIC-A.ST", "ERIC-B.ST", "ESSITY-A.ST",
-    "ESSITY-B.ST", "EWRK.ST", "FABG.ST", "FAG.ST", "FAST.ST", "FMATT.ST",
-    "FNM.ST", "FOI-B.ST", "FPAR-A.ST", "G5EN.ST", "GARO.ST", "GETI-B.ST",
-    "GIG-SEK.ST", "GRNG.ST", "HANZA.ST", "HEBA-B.ST", "HEM.ST", "HEXA-B.ST",
-    "HHO.ST", "HM-B.ST", "HOFI.ST", "HOLM-A.ST", "HOLM-B.ST", "HPOL-B.ST",
-    "HTRO.ST", "HUF-A.ST", "HUF-C.ST", "HUMBLE.ST", "HUSQ-A.ST", "HUSQ-B.ST",
-    "IAR-B.ST", "INDT.ST", "INDU-A.ST", "INDU-C.ST", "INFREA.ST", "INTRUM.ST",
-    "INVE-A.ST", "INVE-B.ST", "INWIDO.ST", "ITAB-B.ST", "JM.ST", "JOHN-B.ST",
-    "KARC.ST", "KFAST-B.ST", "KIND-SDB.ST", "KINV-A.ST", "KINV-B.ST", "KNOW.ST",
-    "LAGR-B.ST", "LAMM-B.ST", "LATO-B.ST", "LIFCO-B.ST", "LIME.ST", "LINC.ST",
-    "LOOMIS.ST", "LUND-B.ST", "MCAP.ST", "MENT.ST", "MIDW-A.ST", "MIDW-B.ST",
-    "MIPS.ST", "MMGR-B.ST", "MOB.ST", "MSON-A.ST", "MSON-B.ST", "MTRS.ST",
-    "MTG-B.ST", "MYCR.ST", "NCC-A.ST", "NCC-B.ST", "NCAB.ST", "NDA-SE.ST",
-    "NEWA-B.ST", "NIBE-B.ST", "NIL-B.ST", "NMAN.ST", "NOLA-B.ST", "NOTE.ST",
-    "NP3.ST", "NYF.ST", "OASM.ST", "OEM-B.ST", "ORE.ST", "OX2.ST",
-    "PACT.ST", "PEAB-B.ST", "PIERCE.ST", "PLAT-B.ST", "PNDX.ST", "PRIC-B.ST",
-    "PROB.ST", "PROF-B.ST", "QLEALA.ST", "RATO-A.ST", "RATO-B.ST", "RAY-B.ST",
-    "READ.ST", "REJL-B.ST", "RESURS.ST", "RVRC.ST", "SAAB-B.ST", "SAGA-A.ST",
-    "SAGA-B.ST", "SAGA-D.ST", "SAND.ST", "SAVE.ST", "SBB-B.ST", "SBB-D.ST",
-    "SCA-A.ST", "SCA-B.ST", "SCST.ST", "SDIP-B.ST", "SEB-A.ST", "SEB-C.ST",
-    "SECT-B.ST", "SF.ST", "SHB-A.ST", "SHB-B.ST", "SINCH.ST", "SKA-B.ST",
-    "SKF-A.ST", "SKF-B.ST", "SLP-B.ST", "SOBI.ST", "SRNKE-B.ST", "SSAB-A.ST",
-    "SSAB-B.ST", "STE-A.ST", "STE-R.ST", "STORY-B.ST", "STWK.ST", "SVED-B.ST",
-    "SWEC-A.ST", "SWEC-B.ST", "SWED-A.ST", "SYSR.ST", "TEL2-A.ST", "TEL2-B.ST",
-    "TELIA.ST", "TETY.ST", "THULE.ST", "TRAD.ST", "TRAN.ST", "TREL-B.ST",
-    "TRIAN-B.ST", "TROAX.ST", "VBG-B.ST", "VIMIAN.ST", "VITR.ST", "VNV.ST",
-    "VOLO.ST", "VOLV-A.ST", "VOLV-B.ST", "VPLAY-B.ST", "WALL-B.ST", "WAY.ST",
-    "WIHL.ST", "WISC.ST", "XANO-B.ST", "XBRANE.ST", "XVIVO.ST"
+    # Industri & Manufacturing (First North)
+    "CATE.ST", "CAT-A.ST", "CAT-B.ST", "COIC.ST", "COOR.ST", "CRED-A.ST",
+    "CTEK.ST", "CTM.ST", "CTT.ST", "DUNI.ST", "DUST.ST", "EAST.ST",
+    "ELAN-B.ST", "ELTEL.ST", "ENRO.ST", "EO.ST", "EWRK.ST", "FAG.ST",
+    "FAST.ST", "FMATT.ST", "FNM.ST", "G5EN.ST", "GARO.ST", "GIG-SEK.ST",
+    "GRNG.ST", "HANZA.ST", "HHO.ST", "HOFI.ST", "HTRO.ST", "HUMBLE.ST",
+    "IAR-B.ST", "INFREA.ST", "INWIDO.ST", "ITAB-B.ST", "JOHN-B.ST",
+    "KARC.ST", "KFAST-B.ST", "KIND-SDB.ST", "KNOW.ST", "LAMM-B.ST",
+    "LIME.ST", "LINC.ST", "MCAP.ST", "MENT.ST", "MIDW-A.ST", "MIDW-B.ST",
+    "MMGR-B.ST", "MOB.ST", "MSON-A.ST", "MSON-B.ST", "MTRS.ST", "NCAB.ST",
+    "NEWA-B.ST", "NGS.ST", "NIL-B.ST", "NMAN.ST", "NOTE.ST", "OASM.ST",
+    "OEM-B.ST", "ORE.ST", "PACT.ST", "PIERCE.ST", "PRIC-B.ST", "PROB.ST",
+    "PROF-B.ST", "QLEALA.ST", "RAY-B.ST", "READ.ST", "REJL-B.ST", "RESURS.ST",
+    "RVRC.ST", "SCST.ST", "SDIP-B.ST", "SENS.ST", "SIVE.ST", "SLP-B.ST",
+    "SOBI.ST", "SRNKE-B.ST", "STWK.ST", "SVED-B.ST", "TETY.ST", "TRAD.ST",
+    "TRAN.ST", "TRIAN-B.ST", "VICO.ST", "VIMIAN.ST", "VNV.ST", "VOLO.ST",
+    "WAY.ST", "XANO-B.ST", "XBRANE.ST", "XVIVO.ST",
+    
+    # Ytterligare First North bolag
+    "ABL.ST", "ACTI.ST", "ALIG.ST", "ALZ.ST", "ANOT.ST", "AOI.ST", "ASAP.ST",
+    "ATEK.ST", "BEGR.ST", "BONG.ST", "BOUV.ST", "BRIO.ST", "CANTA.ST",
+    "CCOR-B.ST", "CRAD-B.ST", "DIGN.ST", "DOR.ST", "DURC-B.ST", "EDGE.ST",
+    "EGT.ST", "ELOS-B.ST", "ENQ.ST", "ENRO-PREF.ST", "EPIS-B.ST", "ETX.ST",
+    "EVID.ST", "FIRE.ST", "GENO.ST", "GOM.ST", "HAKN.ST", "HAV-B.ST",
+    "HOSA-B.ST", "IMAGE.ST", "IMU.ST", "IRLAB-A.ST", "ISOF.ST", "JET.ST",
+    "KDEV.ST", "LOGI-B.ST", "LUC.ST", "MAG.ST", "MANG.ST", "MEDVIR-B.ST",
+    "MFN.ST", "MOBA.ST", "NAXS.ST", "NETI-B.ST", "NEVI.ST", "NTEK-B.ST",
+    "ORTI-A.ST", "ORTI-B.ST", "OSCAR.ST", "OVZ.ST", "PCELL.ST", "POOL-B.ST",
+    "PREC.ST", "PREV-B.ST", "PRIF-B.ST", "QAC.ST", "QIL.ST", "RAIL.ST",
+    "RROS.ST", "SANION.ST", "SEZI.ST", "SINT.ST", "SINT-PREF.ST", "SOFT.ST",
+    "SPM.ST", "STAR-B.ST", "STRAX.ST", "STU.ST", "SUA-B.ST", "TAGM-B.ST",
+    "TRENT.ST", "UHR.ST", "WISE.ST", "XSPRAY.ST", "ZETA.ST"
 ]
 
 # --- USA (S&P 500 + Nasdaq 100 + Populära Growth) ---

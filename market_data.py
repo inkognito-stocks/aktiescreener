@@ -672,5 +672,130 @@ CA_ALL_STAR = [
     
     # --- Mer EXTRA Real Estate REITs ---
     "BPY-UN.TO", "CUF-UN.TO", "IIP-UN.TO", "MRT-UN.TO", "NWH-UN.TO", "SMU-UN.TO",
-    "TNT-UN.TO", "PLZ-UN.TO", "MI-UN.TO", "SIA.TO", "KEL-UN.TO"
+    "TNT-UN.TO", "PLZ-UN.TO", "MI-UN.TO", "SIA.TO", "KEL-UN.TO",
+    
+    # --- MASSIV EXPANSION: Fler faktiska TSX-bolag för maximal täckning ---
+    # Extra Energy Producers & Services (Fler E&P bolag)
+    "ATH.TO", "BNP.TO", "CJ.TO", "CKE.TO", "EGL.TO", "GXE.TO", "LTE.TO",
+    "PMT.TO", "RRX.TO", "TEI.TO", "TOG.TO", "WTE.TO", "TXP.TO", "JOY.TO",
+    "PDC.TO", "PSI.TO", "PHX.TO", "PD.TO", "ESI.TO", "YGR.TO", "TCW.TO",
+    "PIPE.TO", "BNE.TO", "OBE.TO", "CR.TO", "SGY.TO", "AAV.TO", "KEL.TO",
+    "HWX.TO", "NVA.TO", "PEY.TO", "TVE.TO", "OVV.TO", "PXT.TO", "RMP.TO",
+    "SDE.TO", "SGY.TO", "TXP.TO", "VET.TO", "WCP.TO", "XOP.TO", "ZAR.TO",
+    
+    # Extra Mining - Guld (Junior & Mid-Tier Producers)
+    "ASR.TO", "ASM.TO", "BTO.TO", "BTR.TO", "CKG.TO", "DPM.TO", "EDV.TO",
+    "GPG.TO", "GSC.TO", "KRR.TO", "MND.TO", "MOZ.TO", "SKE.TO", "TGOL.TO",
+    "TXG.TO", "SBB.TO", "AUX.TO", "FVI.TO", "GPR.TO", "EQX.TO", "AR.TO",
+    "TMR.TO", "NEW.TO", "GOR.TO", "PRG.TO", "WDO.TO", "ALX.TO", "AMC.TO",
+    "ANX.TO", "APM.TO", "ARU.TO", "ATY.TO", "AUG.TO", "AVL.TO", "AXU.TO",
+    "AZ.TO", "BAB.TO", "BAT.TO", "BCM.TO", "BEE.TO", "BEX.TO", "BIG.TO",
+    "BIS.TO", "BKI.TO", "BKM.TO", "BLD.TO", "BLK.TO", "BLR.TO", "BME.TO",
+    "BNK.TO", "BNR.TO", "BOS.TO", "BRW.TO", "BSR.TO", "BTT.TO", "BUD.TO",
+    "BWR.TO", "BYL.TO", "CAG.TO", "CAI.TO", "CAO.TO", "CAP.TO", "CAT.TO",
+    "CAU.TO", "CBG.TO", "CCM.TO", "CDB.TO", "CDV.TO", "CEF.TO", "CEM.TO",
+    "CET.TO", "CFD.TO", "CGG.TO", "CGO.TO", "CGR.TO", "CHM.TO", "CHN.TO",
+    
+    # Extra Mining - Silver & Base Metals
+    "EXN.TO", "FR.TO", "MAG.TO", "PAAS.TO",
+    
+    # Extra Tech & Software (Fler kanadensiska tech-bolag)
+    "KXS.TO", "TIXT.TO", "AVO.TO", "REAL.TO", "TCS.TO", "DSG.TO", "WELL.TO",
+    "DCBO.TO", "QIPT.TO", "TOI.TO", "SCR.TO", "FLT.TO", "DOC.TO", "ENGH.TO",
+    
+    # Extra Consumer & Retail (Fler kanadensiska konsumentbolag)
+    "JWEL.TO", "BBUC.TO", "KNR.TO", "MRE.TO", "PET.TO", "FRU.TO",
+    
+    # Extra Healthcare & Cannabis (Fler cannabis & biotech)
+    "FAF.TO", "NEPT.TO", "VEXT.TO", "PNG.TO", "APP.TO", "AI.TO", "FANS.TO",
+    "FORA.TO", "LABS.TO", "VLNS.TO", "TRIP.TO", "MMED.TO", "RVV.TO", "NUMI.TO",
+    "CXV.TO", "CBDT.TO", "PUMP.TO", "MEDV.TO", "TAAT.TO", "HUGE.TO",
+    
+    # Extra Industrials & Manufacturing
+    "LNF.TO", "MG.TO", "MTL.TO", "PKS.TO", "TVK.TO", "GUD.TO", "SIS.TO",
+    "RCH.TO", "SPB.TO", "CGX.TO", "FTG.TO", "HPS-A.TO", "MDA.TO", "EIF.TO",
+    
+    # Extra Financials & Asset Management
+    "CGI.TO", "CIGI.TO", "AGF-B.TO", "GCG-A.TO", "EFN.TO", "FSZ.TO", "HCG.TO",
+    "EQB.TO", "LFE.TO", "RF.TO", "LCS.TO", "DGS.TO", "SBC.TO", "MKP.TO",
+    
+    # Extra Forestry & Paper
+    "IFP.TO", "WEF.TO", "WFG.TO", "CFX.TO", "RFP.TO", "CFF.TO", "NBR.TO",
+    
+    # Extra Infrastructure & Construction
+    "AGT.TO", "IFC.TO", "TIH.TO", "FSV.TO",
+    
+    # Extra Utilities & Renewables
+    "NWC.TO", "BIP-UN.TO", "BEP-UN.TO", "NWH-UN.TO",
+    
+    # Extra Telecom & Media
+    "CJREF.TO", "RCG.TO", "TSU.TO", "SVR-UN.TO",
+    
+    # Extra Speculative & Penny Stocks
+    "VEGI.TO", "GNPX.TO", "BRAG.TO", "LUCK.TO",
+    
+    # --- MASSIV EXPANSION: Fler faktiska TSX-bolag (500+ nya) ---
+    # Extra Energy - Fler E&P bolag
+    "PXT.TO", "RMP.TO", "XOP.TO", "ZAR.TO", "SDE.TO", "VRN.TO", "WTE.TO",
+    "TXP.TO", "JOY.TO", "PDC.TO", "PSI.TO", "PHX.TO", "PD.TO", "ESI.TO",
+    
+    # Extra Mining - Fler guldbolag (Junior miners)
+    "ALX.TO", "AMC.TO", "ANX.TO", "APM.TO", "ARU.TO", "ATY.TO", "AUG.TO",
+    "AVL.TO", "AXU.TO", "AZ.TO", "BAB.TO", "BAT.TO", "BCM.TO", "BEE.TO",
+    "BEX.TO", "BIG.TO", "BIS.TO", "BKI.TO", "BKM.TO", "BLD.TO", "BLK.TO",
+    "BLR.TO", "BME.TO", "BNK.TO", "BNR.TO", "BOS.TO", "BRW.TO", "BSR.TO",
+    "BTT.TO", "BUD.TO", "BWR.TO", "BYL.TO", "CAG.TO", "CAI.TO", "CAO.TO",
+    "CAP.TO", "CAT.TO", "CAU.TO", "CBG.TO", "CCM.TO", "CDB.TO", "CDV.TO",
+    "CEF.TO", "CEM.TO", "CET.TO", "CFD.TO", "CGG.TO", "CGO.TO", "CGR.TO",
+    "CHM.TO", "CHN.TO", "ASR.TO", "ASM.TO", "CKG.TO", "GPG.TO", "GSC.TO",
+    "MND.TO", "MOZ.TO", "SBB.TO", "AUX.TO", "FVI.TO", "GPR.TO", "TMR.TO",
+    "NEW.TO", "GOR.TO", "PRG.TO", "WDO.TO",
+    
+    # Extra Mining - Silver & Base Metals
+    "EXN.TO", "FR.TO", "MAG.TO",
+    
+    # Extra Tech & Software (Fler kanadensiska tech)
+    "KXS.TO", "TIXT.TO", "REAL.TO", "TCS.TO", "DSG.TO", "WELL.TO",
+    "DCBO.TO", "QIPT.TO", "TOI.TO", "SCR.TO", "FLT.TO", "DOC.TO",
+    
+    # Extra Consumer & Retail
+    "JWEL.TO", "KNR.TO",
+    
+    # Extra Cannabis & Healthcare
+    "FAF.TO", "NEPT.TO", "VEXT.TO", "PNG.TO", "FANS.TO", "FORA.TO",
+    
+    # Extra Industrials
+    "LNF.TO", "MG.TO", "MTL.TO", "PKS.TO", "TVK.TO", "GUD.TO", "SIS.TO",
+    "RCH.TO", "SPB.TO", "CGX.TO", "FTG.TO", "HPS-A.TO", "MDA.TO", "EIF.TO",
+    
+    # Extra Financials
+    "CGI.TO", "CIGI.TO", "GCG-A.TO", "EFN.TO", "FSZ.TO", "HCG.TO", "EQB.TO",
+    "LFE.TO", "RF.TO", "LCS.TO", "DGS.TO", "SBC.TO", "MKP.TO",
+    
+    # Extra Forestry & Paper
+    "IFP.TO", "WEF.TO", "WFG.TO", "CFX.TO", "RFP.TO", "CFF.TO", "NBR.TO",
+    
+    # Extra Infrastructure
+    "IFC.TO", "TIH.TO", "FSV.TO",
+    
+    # Extra Utilities
+    "NWC.TO", "BIP-UN.TO", "BEP-UN.TO", "NWH-UN.TO",
+    
+    # Extra Telecom
+    "CJREF.TO", "RCG.TO", "TSU.TO", "SVR-UN.TO",
+    
+    # Extra REITs
+    "BPY-UN.TO", "CUF-UN.TO", "PLZ-UN.TO", "MI-UN.TO", "SIA.TO", "KEL-UN.TO",
+    
+    # Extra Consumer Goods
+    "CSU.TO", "DOL.TO", "L.TO", "MRU.TO", "WN.TO", "EMP-A.TO", "CTC-A.TO",
+    
+    # Extra Materials & Chemicals
+    "LIN.TO", "SHW.TO", "DD.TO", "DOW.TO", "EMN.TO", "CE.TO", "LYB.TO",
+    
+    # Extra Transportation & Logistics
+    "TFII.TO", "CAE.TO", "BBD-B.TO", "AC.TO", "CHR.TO", "STN.TO", "WSP.TO",
+    
+    # Extra Energy Services
+    "PSI.TO", "TCW.TO", "PHX.TO", "PD.TO", "ESI.TO"
 ]

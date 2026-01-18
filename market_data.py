@@ -799,3 +799,246 @@ CA_ALL_STAR = [
     # Extra Energy Services
     "PSI.TO", "TCW.TO", "PHX.TO", "PD.TO", "ESI.TO"
 ]
+
+# --- KANADA SEKTORSBASERADE KATEGORIER ---
+# Energy & Pipelines
+CA_ENERGY = [
+    "ENB.TO", "TRP.TO", "PPL.TO", "KEY.TO", "ALA.TO", "CNQ.TO", "SU.TO", "IMO.TO", 
+    "CVE.TO", "TOU.TO", "ARX.TO", "WCP.TO", "MEG.TO", "CPG.TO", "VET.TO", "BIR.TO", 
+    "BTE.TO", "POU.TO", "ERF.TO", "FRU.TO", "TPZ.TO", "GEI.TO", "TVE.TO", "NVA.TO", 
+    "PEY.TO", "AAV.TO", "KEL.TO", "HWX.TO", "WTE.TO", "TXP.TO", "JOY.TO", "GTE.TO", 
+    "PDC.TO", "SGY.TO", "CR.TO", "OBE.TO", "BNE.TO", "PIPE.TO", "YGR.TO", "TCW.TO",
+    "ATH.TO", "BNP.TO", "CJ.TO", "CKE.TO", "EGL.TO", "GXE.TO", "LTE.TO", "PMT.TO", 
+    "RRX.TO", "TEI.TO", "TOG.TO", "PSI.TO", "PHX.TO", "PD.TO", "ESI.TO", "PXT.TO", 
+    "RMP.TO", "XOP.TO", "ZAR.TO", "SDE.TO", "VRN.TO"
+]
+
+# Mining & Materials (Guld, Silver, Koppar, Litium, Uran)
+CA_MINING = [
+    "ABX.TO", "AEM.TO", "WPM.TO", "FNV.TO", "K.TO", "AGI.TO", "BTO.TO", "ELD.TO", 
+    "SEA.TO", "IMG.TO", "DPM.TO", "NGD.TO", "OR.TO", "SAND.TO", "BTG.TO", "LUG.TO", 
+    "MAI.TO", "KRR.TO", "TXG.TO", "NTR.TO", "TECK-B.TO", "IVN.TO", "FM.TO", "LUN.TO", 
+    "HBM.TO", "CS.TO", "CMMC.TO", "CCO.TO", "NXE.TO", "DML.TO", "FCU.TO", "UUUU.TO", 
+    "LAC.TO", "PMET.TO", "FL.TO", "NLC.TO", "CFW.TO", "STLC.TO", "KL.TO", "SSRM.TO", 
+    "YRI.TO", "EDV.TO", "BTR.TO", "MND.TO", "GPG.TO", "SKE.TO", "TGOL.TO", "SBB.TO", 
+    "AUX.TO", "MOZ.TO", "GSC.TO", "FVI.TO", "GPR.TO", "EQX.TO", "AR.TO", "TMR.TO", 
+    "NEW.TO", "GOR.TO", "PRG.TO", "WDO.TO", "RGLD.TO", "MNS.TO", "EMX.TO", "SSL.TO",
+    "TKO.TO", "TGB.TO", "NGE.TO", "CUU.TO", "WRN.TO", "SOI.TO", "ELEF.TO", "NCU.TO", 
+    "AZM.TO", "CUV.TO", "PE.TO", "CNC.TO", "QMC.TO", "CYP.TO", "GXM.TO", "SGML.TO", 
+    "BATL.TO", "VLI.TO", "WLC.TO", "LKE.TO", "EU.TO", "URE.TO", "PDN.TO", "UEX.TO", 
+    "FUU.TO", "ENE.TO", "ISO.TO", "PTU.TO", "GLO.TO", "LOT.TO", "PLU.TO", "RUS.TO", 
+    "CCL-B.TO", "CFP.TO", "TKRFF", "SMY.TO", "MCK.TO", "MDN.TO", "VVC.TO", "CVV.TO",
+    "PNPN.TO", "SXSW.TO", "APPIA.TO", "AMK.TO", "TUD.TO", "VGCX.TO", "GBR.TO", 
+    "NFG.TO", "LAB.TO", "EXN.TO", "FR.TO", "MAG.TO", "ASR.TO", "ASM.TO", "CKG.TO",
+    "ALX.TO", "AMC.TO", "ANX.TO", "APM.TO", "ARU.TO", "ATY.TO", "AUG.TO", "AVL.TO",
+    "AXU.TO", "AZ.TO", "BAB.TO", "BAT.TO", "BCM.TO", "BEE.TO", "BEX.TO", "BIG.TO",
+    "BIS.TO", "BKI.TO", "BKM.TO", "BLD.TO", "BLK.TO", "BLR.TO", "BME.TO", "BNK.TO",
+    "BNR.TO", "BOS.TO", "BRW.TO", "BSR.TO", "BTT.TO", "BUD.TO", "BWR.TO", "BYL.TO",
+    "CAG.TO", "CAI.TO", "CAO.TO", "CAP.TO", "CAT.TO", "CAU.TO", "CBG.TO", "CCM.TO",
+    "CDB.TO", "CDV.TO", "CEF.TO", "CEM.TO", "CET.TO", "CFD.TO", "CGG.TO", "CGO.TO",
+    "CGR.TO", "CHM.TO", "CHN.TO", "PAAS.TO"
+]
+
+# Technology & Software
+CA_TECH = [
+    "SHOP.TO", "CSU.TO", "GIB-A.TO", "OTEX.TO", "LSPD.TO", "CTS.TO", "DSV.TO", 
+    "NVEI.TO", "BB.TO", "DND.TO", "KIN.TO", "ENGH.TO", "TOI.TO", "DSG.TO", "WELL.TO",
+    "DCBO.TO", "QIPT.TO", "KXS.TO", "DOC.TO", "TIXT.TO", "AVO.TO", "SCR.TO", 
+    "REAL.TO", "FLT.TO", "TCS.TO"
+]
+
+# Financials & Banks
+CA_FINANCIALS = [
+    "RY.TO", "TD.TO", "BMO.TO", "BNS.TO", "CM.TO", "NA.TO", "MFC.TO", "SLF.TO", 
+    "GWO.TO", "IAG.TO", "POW.TO", "IGM.TO", "X.TO", "BAM.TO", "BN.TO", "ONEX.TO", 
+    "KFS.TO", "SII.TO", "DIV.TO", "CWB.TO", "LB.TO", "FFH.TO", "CGI.TO", "CIGI.TO", 
+    "TOY.TO", "AGF-B.TO", "GCG-A.TO", "EFN.TO", "FSZ.TO", "HCG.TO", "EQB.TO", 
+    "LFE.TO", "RF.TO", "DFN.TO", "FFN.TO", "FTN.TO", "LCS.TO", "DGS.TO", "SBC.TO", 
+    "MKP.TO"
+]
+
+# Consumer & Retail
+CA_CONSUMER = [
+    "ATD.TO", "DOL.TO", "L.TO", "MRU.TO", "WN.TO", "EMP-A.TO", "CTC-A.TO", "QSR.TO", 
+    "MTY.TO", "AW-UN.TO", "GIL.TO", "PBH.TO", "BYD.TO", "DOO.TO", "ATZ.TO", "GOOS.TO",
+    "SAP.TO", "PZA.TO", "PRMW.TO", "MRE.TO", "PET.TO", "FRU.TO", "JWEL.TO", "BBUC.TO",
+    "KNR.TO"
+]
+
+# Industrials & Transportation
+CA_INDUSTRIALS = [
+    "CNR.TO", "CP.TO", "WCN.TO", "TFII.TO", "CAE.TO", "BBD-B.TO", "AC.TO", "CHR.TO",
+    "STN.TO", "WSP.TO", "ARE.TO", "MAL.TO", "RBA.TO", "PHX.TO", "MDA.TO", "EIF.TO",
+    "LNF.TO", "MG.TO", "MTL.TO", "PKS.TO", "TVK.TO", "GUD.TO", "SIS.TO", "RCH.TO",
+    "SPB.TO", "CGX.TO", "FTG.TO", "HPS-A.TO", "SNC.TO", "FSV.TO", "TIH.TO", "NWC.TO",
+    "AGT.TO", "IFC.TO"
+]
+
+# Telecom & Utilities
+CA_TELECOM_UTILITIES = [
+    "BCE.TO", "T.TO", "RCI-B.TO", "QBR-B.TO", "FTS.TO", "EMA.TO", "H.TO", "AQN.TO",
+    "CU.TO", "NPI.TO", "INE.TO", "BLX.TO", "CPX.TO", "RNW.TO", "TA.TO", "CJREF.TO",
+    "RCG.TO", "TSU.TO", "SVR-UN.TO", "NWC.TO", "BIP-UN.TO", "BEP-UN.TO", "NWH-UN.TO"
+]
+
+# Real Estate (REITs)
+CA_REAL_ESTATE = [
+    "CAR-UN.TO", "GRT-UN.TO", "REI-UN.TO", "AP-UN.TO", "SRU-UN.TO", "CHP-UN.TO",
+    "HR-UN.TO", "AX-UN.TO", "FCR-UN.TO", "DIR-UN.TO", "KMP-UN.TO", "MRT-UN.TO",
+    "SOT-UN.TO", "IIP-UN.TO", "TNT-UN.TO", "BEI-UN.TO", "SMU-UN.TO", "PRV-UN.TO",
+    "MRC.TO", "SGR-UN.TO", "BPY-UN.TO", "CUF-UN.TO", "PLZ-UN.TO", "MI-UN.TO",
+    "SIA.TO", "KEL-UN.TO"
+]
+
+# Healthcare & Cannabis
+CA_HEALTHCARE = [
+    "WEED.TO", "ACB.TO", "TLRY.TO", "HEXO.TO", "OGI.TO", "FIRE.TO", "SNDL.TO",
+    "VFF.TO", "WMD.TO", "CRON.TO", "ZENA.TO", "EMH.TO", "TRUL.TO", "GDNP.TO",
+    "LABS.TO", "VLNS.TO", "TRIP.TO", "MMED.TO", "RVV.TO", "NUMI.TO", "CXV.TO",
+    "CBDT.TO", "PUMP.TO", "MEDV.TO", "TAAT.TO", "HUGE.TO", "CRH.TO", "QIPT.TO",
+    "PHA.TO", "VMD.TO", "MI.TO", "LIO.TO", "PMN.TO", "LIFE.TO", "TLT.TO", "VPH.TO",
+    "PLI.TO", "CURE.TO", "FAF.TO", "NEPT.TO", "VEXT.TO", "PNG.TO", "FANS.TO",
+    "FORA.TO"
+]
+
+# Forestry & Paper
+CA_FORESTRY = [
+    "IFP.TO", "WEF.TO", "WFG.TO", "CFX.TO", "RFP.TO", "CFF.TO", "NBR.TO"
+]
+
+# Speculative & Crypto
+CA_SPECULATIVE = [
+    "BITF.TO", "HUT.TO", "HIVE.TO", "DMGI.TO", "GLXY.TO", "BNXA.TO", "FOOD.TO",
+    "VEGI.TO", "GNPX.TO", "BRAG.TO", "LUCK.TO", "APP.TO", "AI.TO"
+]
+
+# --- USA SEKTORSBASERADE KATEGORIER ---
+# Tech & Software
+US_TECH = [
+    "AAPL", "MSFT", "NVDA", "GOOGL", "GOOG", "AMZN", "META", "TSLA", "TSM", "AMD",
+    "INTC", "QCOM", "AVGO", "ARM", "TXN", "MU", "AMAT", "LRCX", "KLAC", "TER",
+    "ENTG", "AMKR", "FORM", "ONTO", "ACLS", "MKSI", "AEIS", "COHR", "UCTT", "ICHR",
+    "PLAB", "VECO", "NVMI", "ADI", "NXPI", "STM", "ON", "MCHP", "MPWR", "SWKS",
+    "QRVO", "SLAB", "DIOD", "POWI", "ALGM", "RMBS", "LSCC", "WOLF", "INDI", "AOSL",
+    "MXL", "WDC", "STX", "PSTG", "NTAP", "SIMO", "SMCI", "DELL", "HPE", "ANET",
+    "JBL", "CLS", "PAGS", "VRT", "STK", "SNPS", "CDNS", "ANSS", "CEVA", "PDFS",
+    "GLW", "IPGP", "LITE", "VIAV", "FN", "CRUS", "SITM", "MTSI", "SYNA", "HIMX",
+    "QUIK", "GIC", "KOPN", "EMKR", "VSH", "ALTV", "AEHR", "IONQ", "RGTI", "QUBT",
+    "DTST", "MRVL", "ASML", "SMTC", "ASYS", "CAMT", "ACMR", "KLIC", "COHU", "NVTS",
+    "PI", "IMOS", "ORCL", "IBM", "SAP", "CRM", "ADBE", "NOW", "INTU", "WDAY",
+    "TEAM", "HUBS", "ADSK", "DOCU", "ZM", "TWLO", "OKTA", "BSY", "PTC", "SSNC",
+    "MANH", "DT", "PAYC", "TYL", "PCTY", "PATH", "PEGA", "SMAR", "ASAN", "MONDY",
+    "ESTC", "SNOW", "DDOG", "MDB", "NET", "PLTR", "GTLB", "HCP", "CFLT", "IOT",
+    "DBX", "NTNX", "FSLY", "DOCN", "WK", "PANW", "CRWD", "FTNT", "ZS", "CYBR",
+    "CHKP", "TENB", "GEN", "VRNS", "QLYS", "S", "RPD", "PING", "AI", "SOUN",
+    "BBAI", "ALTR", "PRO", "SPIR", "VERI", "BIGC", "BNAI", "BNNR", "BZFD", "CGPT",
+    "EZFL", "GFAI", "GROV", "HIHO", "MLGO", "RCAT", "SGLY", "UPST", "WTRH", "V",
+    "MA", "PYPL", "SQ", "COIN", "HOOD", "AFRM", "TOST", "SHOP", "FICO", "FIS",
+    "FISV", "GPN", "BILL", "EXFY", "MQ", "FOUR", "UBER", "ABNB", "BKNG", "EXPE",
+    "DASH", "LYFT", "DKNG", "ROKU", "SPOT", "ETSY", "CHWY", "W", "ZG", "OPEN",
+    "RDFN", "CVNA", "U", "RBLX", "TTWO", "EA", "ATVI", "APP", "DUOL", "CHGG",
+    "COUR", "DOCS", "TDOC", "VEEV"
+]
+
+# Financials & Banks
+US_FINANCIALS = [
+    "JPM", "BAC", "WFC", "C", "GS", "MS", "BLK", "SCHW", "BK", "STT", "AXP", "COF",
+    "DFS", "SYF", "ALLY", "SOFI", "LC", "OMF", "SLM", "NAVI", "BX", "KKR", "APO",
+    "ARES", "CG", "TROW", "AMP", "BEN", "IVZ", "AMG", "RJF", "SEIC", "BRK-B", "CB",
+    "MMC", "PGR", "AIG", "MET", "ALL", "TRV", "HIG", "PRU", "AFL", "ACGL", "CINF",
+    "PFG", "L", "WRB", "RE", "BRO", "AON", "AJG", "GL", "AIZ"
+]
+
+# Energy & Oil
+US_ENERGY = [
+    "XOM", "CVX", "SHEL", "TTE", "BP", "COP", "OXY", "HES", "EOG", "DVN", "FANG",
+    "MRO", "CTRA", "APA", "VLO", "MPC", "PSX", "PBF", "DINO", "CHK", "OVV", "PR",
+    "CIVI", "MTDR", "SM", "WLL", "CDEV", "SLB", "HAL", "BKR", "NOV", "CHX", "WHD",
+    "NINE", "RIG", "VAL", "NE", "DO", "OII", "FTI", "EQT", "AR", "RRC", "SWN",
+    "LNG", "CNX", "KMI", "WMB", "OKE", "TRGP", "ET", "EPD", "MPLX", "PAA", "CCJ",
+    "UEC", "NXE", "UUUU", "LEU", "DNN", "BWXT", "SMR", "OKLO", "KAMA", "URA",
+    "URNM"
+]
+
+# Healthcare & Biotech
+US_HEALTHCARE = [
+    "JNJ", "UNH", "PFE", "ABBV", "TMO", "ABT", "DHR", "BMY", "AMGN", "GILD",
+    "VRTX", "REGN", "BIIB", "ILMN", "ALXN", "MRNA", "NVAX", "BNTX", "SGEN",
+    "FOLD", "IONS", "ARWR", "ALKS", "PTCT", "RARE", "BLUE", "FATE", "BEAM",
+    "CRISPR", "NTLA", "VERV", "ALLO", "SANA", "RGNX", "BLCM", "KPTI", "IMGN",
+    "ADVM", "ARVN", "RGNX", "ALLO", "SANA", "RGNX", "BLCM", "KPTI", "IMGN"
+]
+
+# Consumer & Retail
+US_CONSUMER = [
+    "WMT", "HD", "MCD", "NKE", "SBUX", "TGT", "LOW", "TJX", "ROST", "DG", "DLTR",
+    "BBY", "GPS", "ANF", "AEO", "URBN", "DKS", "BBWI", "ASO", "BGS", "CPNG",
+    "AMZN", "EBAY", "ETSY", "CHWY", "W", "ZG", "OPEN", "RDFN", "CVNA"
+]
+
+# Industrials
+US_INDUSTRIALS = [
+    "BA", "CAT", "DE", "GE", "HON", "MMM", "ETN", "ITW", "EMR", "PH", "ROK",
+    "AME", "DOV", "XYL", "TT", "CARR", "JCI", "OTIS", "VMI", "SWK", "PNR",
+    "AOS", "GNRC", "HWM", "IR", "NDSN", "IDXX", "UPS", "FDX", "UNP", "CSX",
+    "NSC", "CP", "CN", "ODFL", "JBHT", "XPO", "KNX", "SAIA", "ARCB", "CHRW",
+    "EXPD", "GXO", "RXO", "MATX", "WM", "RSG", "WCN", "CLH", "CWST", "SRCL",
+    "DAR", "PWR", "ACM", "J", "FLR", "KBR", "EME", "FIX", "VMC", "MLM", "SUM",
+    "EXP", "GVA", "STRL"
+]
+
+# Materials & Mining
+US_MATERIALS = [
+    "LIN", "SHW", "DD", "DOW", "EMN", "CE", "LYB", "APD", "FMC", "CF", "MOS",
+    "NTR", "CTVA", "IP", "PKG", "WRK", "SLGN", "AVY", "BALL", "CCK", "OI",
+    "SEE", "BERY", "TECK", "FCX", "NEM", "GOLD", "AEM", "FNV", "WPM", "RGLD",
+    "PAAS", "HL", "AG", "CDE", "EXK", "MAG", "SILV", "SIL", "SILJ", "COPX",
+    "CPER", "JJN", "JJT", "JJU", "LD", "LIT", "REMX", "PICK", "PPLT", "PALL",
+    "PLTM", "URA", "URNM", "UEC", "CCJ", "NXE", "DNN", "UUUU", "LEU"
+]
+
+# --- SVERIGE SEKTORSBASERADE KATEGORIER ---
+# Tech & Software
+SE_TECH = [
+    "SINCH.ST", "BETS-B.ST", "BILL.ST", "MIPS.ST", "PNDX.ST", "OX2.ST", "NDA-SE.ST"
+]
+
+# Financials & Banks
+SE_FINANCIALS = [
+    "SEB-A.ST", "SEB-C.ST", "SHB-A.ST", "SHB-B.ST", "SWED-A.ST", "RESURS.ST"
+]
+
+# Industrials & Manufacturing
+SE_INDUSTRIALS = [
+    "ABB.ST", "ATCO-A.ST", "ATCO-B.ST", "ALFA.ST", "ASSA-B.ST", "BOL.ST", "CAST.ST",
+    "ELUX-B.ST", "ELUX-PROF-B.ST", "ERIC-A.ST", "ERIC-B.ST", "EVO.ST", "GETI-B.ST",
+    "HEX-B.ST", "HOLM-A.ST", "HOLM-B.ST", "HUSQ-A.ST", "HUSQ-B.ST", "INDT.ST",
+    "INDU-A.ST", "INDU-C.ST", "KINV-A.ST", "KINV-B.ST", "LUND-B.ST", "MEKO.ST",
+    "NCC-A.ST", "NCC-B.ST", "NIBE-B.ST", "PEAB-B.ST", "PLAT-B.ST", "RATO-A.ST",
+    "RATO-B.ST", "SAAB-B.ST", "SAND.ST", "SCA-A.ST", "SCA-B.ST", "SKF-A.ST",
+    "SKF-B.ST", "SSAB-A.ST", "SSAB-B.ST", "STE-A.ST", "STE-R.ST", "SWEC-A.ST",
+    "SWEC-B.ST", "TEL2-A.ST", "TEL2-B.ST", "TELIA.ST", "TREL-B.ST", "TROAX.ST",
+    "VBG-B.ST", "VOLV-A.ST", "VOLV-B.ST", "WALL-B.ST", "WIHL.ST", "WISC.ST",
+    "AFRY.ST", "BULTEN.ST", "CTEK.ST", "FAST.ST", "GARO.ST", "ITAB-B.ST",
+    "KFAST-B.ST", "NOTE.ST", "PACT.ST", "RAY-B.ST", "SCST.ST", "XANO-B.ST"
+]
+
+# Consumer & Retail
+SE_CONSUMER = [
+    "HM-B.ST", "ELUX-B.ST", "ELUX-PROF-B.ST", "HEM.ST", "THULE.ST", "VPLAY-B.ST"
+]
+
+# Healthcare & Biotech
+SE_HEALTHCARE = [
+    "AZN.ST", "GETI-B.ST", "SOBI.ST", "XVIVO.ST", "VIMIAN.ST", "SENS.ST"
+]
+
+# Energy & Utilities
+SE_ENERGY = [
+    "VITR.ST", "G5EN.ST"
+]
+
+# Real Estate
+SE_REAL_ESTATE = [
+    "SBB-B.ST", "SBB-D.ST", "NP3.ST", "KINV-A.ST", "KINV-B.ST"
+]

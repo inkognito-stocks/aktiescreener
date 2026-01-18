@@ -8,31 +8,89 @@ from bs4 import BeautifulSoup
 
 # --- IMPORT FRÅN MARKET_DATA.PY ---
 try:
-    from market_data import (
-        SE_LARGE_CAP, 
-        SE_MID_CAP, 
-        SE_SMALL_CAP, 
-        US_ALL_STAR, 
-        CA_ALL_STAR
-    )
-except ImportError:
-    st.error("⚠️ Hittade inte 'market_data.py'. Se till att filen ligger i samma mapp!")
+    import market_data as md
+    # Grundlistor
+    SE_LARGE_CAP = getattr(md, 'SE_LARGE_CAP', [])
+    SE_MID_CAP = getattr(md, 'SE_MID_CAP', [])
+    SE_SMALL_CAP = getattr(md, 'SE_SMALL_CAP', [])
+    US_ALL_STAR = getattr(md, 'US_ALL_STAR', [])
+    CA_ALL_STAR = getattr(md, 'CA_ALL_STAR', [])
+    # Kanada sektorer
+    CA_ENERGY = getattr(md, 'CA_ENERGY', [])
+    CA_MINING = getattr(md, 'CA_MINING', [])
+    CA_TECH = getattr(md, 'CA_TECH', [])
+    CA_FINANCIALS = getattr(md, 'CA_FINANCIALS', [])
+    CA_CONSUMER = getattr(md, 'CA_CONSUMER', [])
+    CA_INDUSTRIALS = getattr(md, 'CA_INDUSTRIALS', [])
+    CA_TELECOM_UTILITIES = getattr(md, 'CA_TELECOM_UTILITIES', [])
+    CA_REAL_ESTATE = getattr(md, 'CA_REAL_ESTATE', [])
+    CA_HEALTHCARE = getattr(md, 'CA_HEALTHCARE', [])
+    CA_FORESTRY = getattr(md, 'CA_FORESTRY', [])
+    CA_SPECULATIVE = getattr(md, 'CA_SPECULATIVE', [])
+    # USA sektorer
+    US_TECH = getattr(md, 'US_TECH', [])
+    US_FINANCIALS = getattr(md, 'US_FINANCIALS', [])
+    US_ENERGY = getattr(md, 'US_ENERGY', [])
+    US_HEALTHCARE = getattr(md, 'US_HEALTHCARE', [])
+    US_CONSUMER = getattr(md, 'US_CONSUMER', [])
+    US_INDUSTRIALS = getattr(md, 'US_INDUSTRIALS', [])
+    US_MATERIALS = getattr(md, 'US_MATERIALS', [])
+    # Sverige sektorer
+    SE_TECH = getattr(md, 'SE_TECH', [])
+    SE_FINANCIALS = getattr(md, 'SE_FINANCIALS', [])
+    SE_INDUSTRIALS = getattr(md, 'SE_INDUSTRIALS', [])
+    SE_CONSUMER = getattr(md, 'SE_CONSUMER', [])
+    SE_HEALTHCARE = getattr(md, 'SE_HEALTHCARE', [])
+    SE_ENERGY = getattr(md, 'SE_ENERGY', [])
+    SE_REAL_ESTATE = getattr(md, 'SE_REAL_ESTATE', [])
+except ImportError as e:
+    st.error(f"⚠️ Hittade inte 'market_data.py': {e}")
     # Fallback-tomma listor så appen inte kraschar
     SE_LARGE_CAP, SE_MID_CAP, SE_SMALL_CAP, US_ALL_STAR, CA_ALL_STAR = [], [], [], [], []
+    CA_ENERGY, CA_MINING, CA_TECH, CA_FINANCIALS, CA_CONSUMER, CA_INDUSTRIALS = [], [], [], [], [], []
+    CA_TELECOM_UTILITIES, CA_REAL_ESTATE, CA_HEALTHCARE, CA_FORESTRY, CA_SPECULATIVE = [], [], [], [], []
+    US_TECH, US_FINANCIALS, US_ENERGY, US_HEALTHCARE, US_CONSUMER, US_INDUSTRIALS, US_MATERIALS = [], [], [], [], [], [], []
+    SE_TECH, SE_FINANCIALS, SE_INDUSTRIALS, SE_CONSUMER, SE_HEALTHCARE, SE_ENERGY, SE_REAL_ESTATE = [], [], [], [], [], [], []
 
 # --- ORGANISERA LISTORNA ---
 # Vi bygger ihop strukturen här så att menyn i appen fungerar snyggt
 ticker_lists = {
     "Sverige 🇸🇪": {
+        "Alla bolag": SE_LARGE_CAP + SE_MID_CAP + SE_SMALL_CAP,
         "Large Cap": SE_LARGE_CAP,
         "Mid Cap": SE_MID_CAP,
-        "Small Cap": SE_SMALL_CAP
+        "Small Cap": SE_SMALL_CAP,
+        "Tech & Software": SE_TECH,
+        "Financials & Banks": SE_FINANCIALS,
+        "Industrials & Manufacturing": SE_INDUSTRIALS,
+        "Consumer & Retail": SE_CONSUMER,
+        "Healthcare & Biotech": SE_HEALTHCARE,
+        "Energy & Utilities": SE_ENERGY,
+        "Real Estate": SE_REAL_ESTATE
     },
     "USA 🇺🇸": {
-        "S&P 100 / All Star": US_ALL_STAR
+        "Alla bolag": US_ALL_STAR,
+        "Tech & Software": US_TECH,
+        "Financials & Banks": US_FINANCIALS,
+        "Energy & Oil": US_ENERGY,
+        "Healthcare & Biotech": US_HEALTHCARE,
+        "Consumer & Retail": US_CONSUMER,
+        "Industrials": US_INDUSTRIALS,
+        "Materials & Mining": US_MATERIALS
     },
     "Kanada 🇨🇦": {
-        "TSX Top 40": CA_ALL_STAR
+        "Alla bolag": CA_ALL_STAR,
+        "Energy & Pipelines": CA_ENERGY,
+        "Mining & Materials": CA_MINING,
+        "Tech & Software": CA_TECH,
+        "Financials & Banks": CA_FINANCIALS,
+        "Consumer & Retail": CA_CONSUMER,
+        "Industrials & Transportation": CA_INDUSTRIALS,
+        "Telecom & Utilities": CA_TELECOM_UTILITIES,
+        "Real Estate (REITs)": CA_REAL_ESTATE,
+        "Healthcare & Cannabis": CA_HEALTHCARE,
+        "Forestry & Paper": CA_FORESTRY,
+        "Speculative & Crypto": CA_SPECULATIVE
     }
 }
 
@@ -583,8 +641,7 @@ def main():
     st.title("🌍 Global AktieScreener")
     st.markdown("Scanna aktier från **Sverige, Kanada och USA** (Listor från `market_data.py`)")
     
-    # --- SIDEBAR ---
-    st.sidebar.header("🎯 Filterinställningar")
+
     
     # --- MARKNADSVAL ---
     st.sidebar.subheader("🌍 Välj Marknader")
